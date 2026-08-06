@@ -204,6 +204,10 @@
       <input type="file" id="iconInput" accept="image/png,image/jpeg">
     </div>
     <p class="hint">Ideal: imagem quadrada, pelo menos 1024×1024px, fundo sólido ou transparente (PNG). Se não escolheres nenhuma, fica o ícone padrão do Capacitor.</p>
+
+    <div id="sourceSummary" style="margin-top:14px; padding:10px 12px; border:1px solid var(--accent-dim); border-radius:5px; background:rgba(61,220,132,.06); font-family:var(--mono); font-size:12.5px; color:var(--accent);">
+      ⚠ nenhuma origem selecionada ainda
+    </div>
   </div>
 
   <button class="primary" id="buildBtn">Iniciar build</button>
@@ -250,14 +254,39 @@ function log(msg, cls){
 }
 
 // Mode tabs
+function updateSourceSummary(){
+  const mode = document.querySelector('.mode-tab.active').dataset.mode;
+  const box = $('sourceSummary');
+  if(mode === 'file'){
+    if(selectedFile){
+      box.style.color = 'var(--accent)';
+      box.textContent = '✓ vai enviar o FICHEIRO: ' + selectedFile.name;
+    } else {
+      box.style.color = 'var(--warn)';
+      box.textContent = '⚠ modo Ficheiro HTML ativo, mas nenhum ficheiro escolhido ainda';
+    }
+  } else {
+    const url = $('sourceUrl').value.trim();
+    if(url){
+      box.style.color = 'var(--accent)';
+      box.textContent = '✓ vai usar o URL: ' + url;
+    } else {
+      box.style.color = 'var(--warn)';
+      box.textContent = '⚠ modo URL ativo, mas nenhum URL preenchido ainda';
+    }
+  }
+}
+
 document.querySelectorAll('.mode-tab').forEach(tab=>{
   tab.addEventListener('click', ()=>{
     document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
     document.querySelectorAll('.mode-panel').forEach(p=>p.classList.remove('active'));
     tab.classList.add('active');
     $('mode-'+tab.dataset.mode).classList.add('active');
+    updateSourceSummary();
   });
 });
+$('sourceUrl').addEventListener('input', updateSourceSummary);
 
 // File picker
 let selectedFile = null;
@@ -273,6 +302,7 @@ $('fileInput').addEventListener('change', (e)=>{
     selectedFile = f;
     $('dropZone').classList.add('has-file');
     dropZoneLabel.textContent = '✓ ' + f.name;
+    updateSourceSummary();
   }
 });
 
@@ -390,8 +420,9 @@ $('buildBtn').addEventListener('click', async ()=>{
     log('✗ falta preencher: repositório, token, nome da app ou package ID.', 'log-err');
     return;
   }
-  if(mode==='file' && !file){ log('✗ escolhe um ficheiro HTML.', 'log-err'); return; }
-  if(mode==='url' && !sourceUrl){ log('✗ indica o URL da app.', 'log-err'); return; }
+  if(mode==='file' && !file){ log('✗ escolhe um ficheiro HTML (a aba "Ficheiro HTML" está ativa mas nada foi escolhido).', 'log-err'); return; }
+  if(mode==='url' && !sourceUrl){ log('✗ indica o URL (a aba "URL" está ativa mas o campo está vazio).', 'log-err'); return; }
+  log('$ origem confirmada: modo="'+mode+'" '+(mode==='file' ? 'ficheiro="'+file.name+'"' : 'url="'+sourceUrl+'"'), 'log-ok');
 
   const [owner, repoName] = repo.split('/');
   if(!owner || !repoName){ log('✗ formato do repositório inválido — tem de ser owner/repo. Valor lido: "'+repo+'"', 'log-err'); return; }
