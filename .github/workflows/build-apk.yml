@@ -14,7 +14,7 @@ on:
         required: true
         default: 'file'
       source_url:
-        description: 'URL da app (sÃ³ usado se source_mode = url)'
+        description: 'URL da app (só usado se source_mode = url)'
         required: false
         default: ''
 
@@ -25,7 +25,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout do repositÃ³rio
+      - name: Checkout do repositório
         uses: actions/checkout@v4
 
       - name: Configurar Node.js
@@ -50,7 +50,7 @@ jobs:
           </head><body></body></html>
           EOF
           fi
-          # em modo "file", www/index.html jÃ¡ foi commitado pelo index.html antes de disparar este workflow
+          # em modo "file", www/index.html já foi commitado pelo index.html antes de disparar este workflow
 
       - name: Instalar Capacitor
         run: |
@@ -63,19 +63,19 @@ jobs:
       - name: Adicionar plataforma Android
         run: npx cap add android
 
-      - name: Gerar Ã­cone da app
+      - name: Gerar ícone da app
         run: |
           if [ -f resources/icon.png ]; then
-            echo "Ãcone personalizado encontrado â€” a gerar todos os tamanhos..."
+            echo "Ícone personalizado encontrado — a gerar todos os tamanhos..."
             npx @capacitor/assets generate --android --iconBackgroundColor '#FFFFFF' --iconBackgroundColorDark '#000000'
           else
-            echo "Sem Ã­cone personalizado â€” a usar o Ã­cone padrÃ£o do Capacitor."
+            echo "Sem ícone personalizado — a usar o ícone padrão do Capacitor."
           fi
 
       - name: Sincronizar
         run: npx cap sync android
 
-      - name: Corrigir conflito de versÃµes do Kotlin
+      - name: Corrigir conflito de versões do Kotlin
         run: |
           cat >> android/app/build.gradle <<'EOF'
 
@@ -111,7 +111,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: "${{ github.event.inputs.app_name }} â€” build #${{ github.run_number }}"
+          name: "${{ github.event.inputs.app_name }} — build #${{ github.run_number }}"
           body: |
             APK gerado automaticamente a partir de `www/index.html` (ou URL fornecido).
             Package: `${{ github.event.inputs.package_id }}`
