@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>apk:// — HTML para APK, grátis</title>
+<title>apk:// — URL, HTML ou ZIP → APK, grátis</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{
     --bg:#0B0F0E;
@@ -24,7 +25,6 @@
     margin:0; background:var(--bg); color:var(--text);
     font-family:var(--sans); line-height:1.5;
   }
-  @font-face{}
   .wrap{max-width:760px;margin:0 auto;padding:48px 20px 100px;}
 
   header{margin-bottom:36px;}
@@ -40,7 +40,7 @@
     letter-spacing:-0.01em;
   }
   h1 span{color:var(--dim);}
-  .sub{color:var(--dim); font-size:14.5px; max-width:540px;}
+  .sub{color:var(--dim); font-size:14.5px; max-width:560px;}
 
   .steps{display:flex; gap:6px; margin:28px 0 22px; font-family:var(--mono); font-size:12px;}
   .step-pill{
@@ -69,6 +69,7 @@
   .row > div{flex:1;}
   .hint{font-size:12px; color:var(--dim); margin-top:-10px; margin-bottom:14px;}
   .hint a{color:var(--accent);}
+  .hint.warn{color:var(--warn);}
 
   .mode-tabs{display:flex; gap:8px; margin-bottom:14px;}
   .mode-tab{
@@ -94,6 +95,13 @@
   button.primary:disabled{background:var(--line); color:var(--dim); cursor:not-allowed;}
   button.primary:hover:not(:disabled){background:#4FE896;}
 
+  button.secondary{
+    width:100%; background:transparent; color:var(--accent); border:1px solid var(--accent-dim);
+    border-radius:6px; padding:10px; font-family:var(--mono); font-size:13px; cursor:pointer;
+    margin-top:8px;
+  }
+  button.secondary:hover{background:rgba(61,220,132,.06);}
+
   .term{
     background:#070A08; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-top:16px;
   }
@@ -105,7 +113,7 @@
   .term-bar .d1{background:#F85149;} .term-bar .d2{background:#F0B429;} .term-bar .d3{background:#3DDC84;}
   .term-bar span{margin-left:8px; font-family:var(--mono); font-size:11.5px; color:var(--dim);}
   .term-body{
-    padding:14px 16px; font-family:var(--mono); font-size:12.5px; max-height:280px;
+    padding:14px 16px; font-family:var(--mono); font-size:12.5px; max-height:320px;
     overflow-y:auto; white-space:pre-wrap;
   }
   .log-line{margin-bottom:3px;}
@@ -113,9 +121,14 @@
   .log-warn{color:var(--warn);}
   .log-err{color:var(--err);}
   .log-dim{color:var(--dim);}
-  .cursor{display:inline-block;width:7px;height:13px;background:var(--accent);vertical-align:middle;
-    animation:blink 1s step-end infinite;}
-  @keyframes blink{50%{opacity:0;}}
+
+  .filelist{
+    margin-top:10px; max-height:160px; overflow-y:auto; font-family:var(--mono); font-size:12px;
+    border:1px solid var(--line); border-radius:6px; background:var(--panel-2);
+  }
+  .filelist div{padding:5px 10px; border-bottom:1px solid var(--line); color:var(--text);}
+  .filelist div:last-child{border-bottom:none;}
+  .filelist .size{color:var(--dim); float:right;}
 
   .result{
     margin-top:14px; padding:16px; border:1px solid var(--accent-dim); border-radius:6px;
@@ -139,8 +152,8 @@
 
   <header>
     <div class="brand"><span class="dot"></span>APK://BUILD — grátis, sem servidor próprio</div>
-    <h1>HTML <span>→</span> APK</h1>
-    <p class="sub">Carrega a tua app (ou dá o URL do GitHub Pages), e um workflow do GitHub Actions compila e assina o APK por ti. Sem custos, sem contas pagas.</p>
+    <h1>URL, HTML ou ZIP <span>→</span> APK</h1>
+    <p class="sub">Escolhe a origem do teu app, o conteúdo é lido aqui no browser e enviado a sério para dentro do repositório. O APK final tem o conteúdo embutido — não é um atalho para nenhum site.</p>
   </header>
 
   <div class="steps">
@@ -164,7 +177,6 @@
     </div>
     <p class="hint">
       O token precisa dos scopes <code>repo</code> e <code>workflow</code>.
-      Cria um em <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens</a>.
       Nada disto é enviado para lado nenhum além da API oficial do GitHub — corre tudo no teu browser.
     </p>
   </div>
@@ -175,7 +187,7 @@
     <div class="row">
       <div>
         <label>Nome da app</label>
-        <input type="text" id="appName" placeholder="ex: MEDBI Store">
+        <input type="text" id="appName" placeholder="ex: Arquivo AAFM">
       </div>
       <div>
         <label>Package ID</label>
@@ -185,25 +197,34 @@
 
     <label>Origem do conteúdo</label>
     <div class="mode-tabs">
-      <div class="mode-tab active" data-mode="file">Ficheiro HTML</div>
-      <div class="mode-tab" data-mode="url">URL (GitHub Pages)</div>
+      <div class="mode-tab active" data-mode="url">URL (site já publicado)</div>
+      <div class="mode-tab" data-mode="file">Ficheiro HTML único</div>
+      <div class="mode-tab" data-mode="zip">Pasta em .ZIP</div>
     </div>
 
-    <div class="mode-panel active" id="mode-file">
+    <div class="mode-panel active" id="mode-url">
+      <label>URL da app já publicada</label>
+      <input type="text" id="sourceUrl" placeholder="https://usuario.github.io/repo/pagina/">
+      <p class="hint">Vou descarregar o HTML dessa página e os ficheiros CSS/JS/imagens ligados a ela (mesma origem), e enviar tudo para dentro do APK. Se o site tiver recursos de outros domínios que bloqueiem CORS, aviso-te no log e o ícone/estilo pode ficar incompleto — nesse caso usa o modo ZIP, que é 100% garantido.</p>
+    </div>
+    <div class="mode-panel" id="mode-file">
       <div class="file-drop" id="dropZone">
         <input type="file" id="fileInput" accept=".html,.htm">
       </div>
+      <p class="hint">Para apps de uma página só, com tudo (CSS/JS) inline no próprio HTML.</p>
     </div>
-    <div class="mode-panel" id="mode-url">
-      <label>URL da app já publicada</label>
-      <input type="text" id="sourceUrl" placeholder="https://alberto.github.io/medbi-store/">
+    <div class="mode-panel" id="mode-zip">
+      <div class="file-drop" id="zipDropZone">
+        <input type="file" id="zipInput" accept=".zip">
+      </div>
+      <p class="hint">A forma mais fiável: comprime a pasta do teu site (com <code>index.html</code> na raiz) num .zip e envia aqui. Preserva toda a estrutura de pastas.</p>
     </div>
 
     <label style="margin-top:8px;">Ícone da app (opcional)</label>
     <div class="file-drop" id="iconDropZone">
       <input type="file" id="iconInput" accept="image/png,image/jpeg">
     </div>
-    <p class="hint">Ideal: imagem quadrada, pelo menos 1024×1024px, fundo sólido ou transparente (PNG). Se não escolheres nenhuma, fica o ícone padrão do Capacitor.</p>
+    <p class="hint">Ideal: imagem quadrada, pelo menos 1024×1024px. Se não escolheres nenhuma, fica o ícone padrão.</p>
 
     <div id="sourceSummary" style="margin-top:14px; padding:10px 12px; border:1px solid var(--accent-dim); border-radius:5px; background:rgba(61,220,132,.06); font-family:var(--mono); font-size:12.5px; color:var(--accent);">
       ⚠ nenhuma origem selecionada ainda
@@ -222,7 +243,7 @@
 
   <div class="result" id="result">
     <div style="font-family:var(--mono);color:var(--accent);font-size:13.5px;">✓ Build concluído</div>
-    <div style="color:var(--dim);font-size:12.5px;margin-top:4px;">O APK está pronto na Release do teu repositório.</div>
+    <div style="color:var(--dim);font-size:12.5px;margin-top:4px;">O APK está pronto na Release do teu repositório, com o conteúdo embutido.</div>
     <a class="dl" id="dlLink" href="#" target="_blank">Descarregar APK</a>
   </div>
 
@@ -230,12 +251,12 @@
     <summary>Configuração inicial (fazer uma vez por repositório)</summary>
     <ol>
       <li>Cria um repositório novo (pode ser privado) no GitHub, só para os builds.</li>
-      <li>Copia o ficheiro <code>build-apk.yml</code> (fornecido junto com este index) para <code>.github/workflows/build-apk.yml</code> nesse repositório.</li>
-      <li>Faz commit e push desse ficheiro — sem isto o GitHub não sabe como compilar.</li>
+      <li>Garante que <code>.github/workflows/build-apk.yml</code> existe nesse repositório e faz <code>npx cap sync android</code> a partir da pasta <code>www/</code>.</li>
       <li>Gera um token em <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens</a> com scopes <code>repo</code> + <code>workflow</code>.</li>
       <li>Preenche os campos acima e clica "Iniciar build".</li>
     </ol>
-    <p><strong>Nota sobre assinatura:</strong> o workflow gera uma keystore nova a cada build. Isso é suficiente para testar/instalar, mas se quiseres publicar actualizações da mesma app mais tarde (sem forçar desinstalação), vais precisar de fixar uma keystore fixa como <em>secret</em> do repositório — posso ajudar-te com isso depois.</p>
+    <p><strong>Porque é que isto corrige o problema do "abre como site":</strong> esta versão nunca pede ao workflow para criar um atalho — ela própria lê o conteúdo (URL, HTML ou ZIP) aqui no browser e envia os ficheiros reais para <code>www/</code> no repositório, sempre identificados como <code>source_mode=file</code> perante o workflow. O que sai no APK é sempre o conteúdo de verdade.</p>
+    <p><strong>Nota sobre assinatura:</strong> se o workflow gerar uma keystore nova a cada build, isso chega para testar/instalar, mas para publicar atualizações da mesma app sem forçar desinstalação, precisas de uma keystore fixa como <em>secret</em> do repositório.</p>
   </details>
 
 </div>
@@ -246,6 +267,7 @@ const termBody = $('termBody');
 const term = $('term');
 
 function log(msg, cls){
+  term.style.display = 'block';
   const line = document.createElement('div');
   line.className = 'log-line' + (cls ? ' '+cls : '');
   line.textContent = msg;
@@ -253,27 +275,27 @@ function log(msg, cls){
   termBody.scrollTop = termBody.scrollHeight;
 }
 
-// Mode tabs
+window.addEventListener('error', function(e){
+  log('✗ erro de script: '+e.message+' (linha '+e.lineno+')', 'log-err');
+});
+window.addEventListener('unhandledrejection', function(e){
+  log('✗ promessa rejeitada: '+(e.reason && e.reason.message ? e.reason.message : e.reason), 'log-err');
+});
+
+// ---------- Mode tabs ----------
 function updateSourceSummary(){
   const mode = document.querySelector('.mode-tab.active').dataset.mode;
   const box = $('sourceSummary');
-  if(mode === 'file'){
-    if(selectedFile){
-      box.style.color = 'var(--accent)';
-      box.textContent = '✓ vai enviar o FICHEIRO: ' + selectedFile.name;
-    } else {
-      box.style.color = 'var(--warn)';
-      box.textContent = '⚠ modo Ficheiro HTML ativo, mas nenhum ficheiro escolhido ainda';
-    }
-  } else {
+  if(mode === 'url'){
     const url = $('sourceUrl').value.trim();
-    if(url){
-      box.style.color = 'var(--accent)';
-      box.textContent = '✓ vai usar o URL: ' + url;
-    } else {
-      box.style.color = 'var(--warn)';
-      box.textContent = '⚠ modo URL ativo, mas nenhum URL preenchido ainda';
-    }
+    box.style.color = url ? 'var(--accent)' : 'var(--warn)';
+    box.textContent = url ? ('✓ vai descarregar e embutir: ' + url) : '⚠ modo URL ativo, mas nenhum URL preenchido ainda';
+  } else if(mode === 'file'){
+    box.style.color = selectedFile ? 'var(--accent)' : 'var(--warn)';
+    box.textContent = selectedFile ? ('✓ vai enviar o FICHEIRO: ' + selectedFile.name) : '⚠ modo Ficheiro HTML ativo, mas nenhum ficheiro escolhido ainda';
+  } else {
+    box.style.color = selectedZip ? 'var(--accent)' : 'var(--warn)';
+    box.textContent = selectedZip ? ('✓ vai extrair e enviar: ' + selectedZip.name) : '⚠ modo ZIP ativo, mas nenhum ficheiro escolhido ainda';
   }
 }
 
@@ -288,55 +310,59 @@ document.querySelectorAll('.mode-tab').forEach(tab=>{
 });
 $('sourceUrl').addEventListener('input', updateSourceSummary);
 
-// File picker
+// ---------- File pickers ----------
 let selectedFile = null;
 const dropZoneLabel = document.createElement('span');
-dropZoneLabel.id = 'dropZoneLabel';
 dropZoneLabel.textContent = '📄 clica para escolher o teu index.html (single-file)';
 $('dropZone').insertBefore(dropZoneLabel, $('fileInput'));
-
 $('dropZone').addEventListener('click', ()=> $('fileInput').click());
 $('fileInput').addEventListener('change', (e)=>{
   const f = e.target.files[0];
-  if(f){
-    selectedFile = f;
-    $('dropZone').classList.add('has-file');
-    dropZoneLabel.textContent = '✓ ' + f.name;
-    updateSourceSummary();
-  }
+  if(f){ selectedFile = f; $('dropZone').classList.add('has-file'); dropZoneLabel.textContent = '✓ ' + f.name; updateSourceSummary(); }
 });
 
-// Icon picker
+let selectedZip = null;
+const zipDropZoneLabel = document.createElement('span');
+zipDropZoneLabel.textContent = '🗜️ clica para escolher o teu .zip';
+$('zipDropZone').insertBefore(zipDropZoneLabel, $('zipInput'));
+$('zipDropZone').addEventListener('click', ()=> $('zipInput').click());
+$('zipInput').addEventListener('change', (e)=>{
+  const f = e.target.files[0];
+  if(f){ selectedZip = f; $('zipDropZone').classList.add('has-file'); zipDropZoneLabel.textContent = '✓ ' + f.name; updateSourceSummary(); }
+});
+
 let selectedIcon = null;
 const iconDropZoneLabel = document.createElement('span');
 iconDropZoneLabel.textContent = '🖼️ clica para escolher o ícone (PNG/JPG)';
 $('iconDropZone').insertBefore(iconDropZoneLabel, $('iconInput'));
-
 $('iconDropZone').addEventListener('click', ()=> $('iconInput').click());
 $('iconInput').addEventListener('change', (e)=>{
   const f = e.target.files[0];
-  if(f){
-    selectedIcon = f;
-    $('iconDropZone').classList.add('has-file');
-    iconDropZoneLabel.textContent = '✓ ' + f.name;
-  }
+  if(f){ selectedIcon = f; $('iconDropZone').classList.add('has-file'); iconDropZoneLabel.textContent = '✓ ' + f.name; }
 });
 
+// ---------- Helpers ----------
 function b64EncodeUnicode(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
-
 function fileToBase64(file){
   return new Promise((resolve, reject)=>{
     const reader = new FileReader();
-    reader.onload = ()=> resolve(reader.result.split(',')[1]); // remove "data:...;base64,"
-    reader.onerror = ()=> reject(new Error('Falha ao ler o ficheiro (pode ser demasiado grande ou estar corrompido).'));
+    reader.onload = ()=> resolve(reader.result.split(',')[1]);
+    reader.onerror = ()=> reject(new Error('Falha ao ler o ficheiro.'));
     reader.readAsDataURL(file);
   });
 }
+function arrayBufferToBase64(buf){
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+  }
+  return btoa(binary);
+}
 
-// Redimensiona/comprime uma imagem para um PNG quadrado de até 1024x1024,
-// para evitar enviar fotos de câmara de vários MB como se fossem ícones
 function resizeImageToSquarePng(file, maxSize){
   return new Promise((resolve, reject)=>{
     const img = new Image();
@@ -344,13 +370,10 @@ function resizeImageToSquarePng(file, maxSize){
     img.onload = ()=>{
       const size = Math.min(maxSize, Math.max(img.width, img.height));
       const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
+      canvas.width = size; canvas.height = size;
       const ctx = canvas.getContext('2d');
-      // fundo branco (evita ícones transparentes ficarem pretos em alguns launchers)
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0,0,size,size);
-      // centra a imagem original dentro do quadrado, mantendo proporção
       const scale = Math.min(size/img.width, size/img.height);
       const w = img.width*scale, h = img.height*scale;
       ctx.drawImage(img, (size-w)/2, (size-h)/2, w, h);
@@ -368,19 +391,6 @@ function resizeImageToSquarePng(file, maxSize){
   });
 }
 
-async function uploadFileToRepo(owner, repoName, token, path, base64content, commitMessage){
-  let sha = undefined;
-  const existing = await ghApi(`/repos/${owner}/${repoName}/contents/${path}`, {}, token);
-  if(existing.ok){
-    const j = await existing.json();
-    sha = j.sha;
-  }
-  return ghApi(`/repos/${owner}/${repoName}/contents/${path}`, {
-    method:'PUT',
-    body: JSON.stringify({ message: commitMessage, content: base64content, sha: sha })
-  }, token);
-}
-
 async function ghApi(path, opts, token){
   const res = await fetch('https://api.github.com'+path, {
     ...opts,
@@ -394,40 +404,123 @@ async function ghApi(path, opts, token){
   return res;
 }
 
-// Mostra qualquer erro de JavaScript diretamente na página, mesmo sem consola aberta
-window.addEventListener('error', function(e){
-  term.style.display = 'block';
-  log('✗ erro de script: '+e.message+' (linha '+e.lineno+')', 'log-err');
-});
-window.addEventListener('unhandledrejection', function(e){
-  term.style.display = 'block';
-  log('✗ promessa rejeitada: '+(e.reason && e.reason.message ? e.reason.message : e.reason), 'log-err');
-});
+async function uploadFileToRepo(owner, repoName, token, path, base64content, commitMessage){
+  let sha = undefined;
+  const existing = await ghApi(`/repos/${owner}/${repoName}/contents/${path}`, {}, token);
+  if(existing.ok){
+    const j = await existing.json();
+    sha = j.sha;
+  }
+  return ghApi(`/repos/${owner}/${repoName}/contents/${path}`, {
+    method:'PUT',
+    body: JSON.stringify({ message: commitMessage, content: base64content, sha: sha })
+  }, token);
+}
 
+// ---------- Content collection per mode ----------
+// Every mode resolves to the same shape: [{ path: 'www/...', base64: '...' }, ...]
+
+async function collectFromFile(file){
+  const text = await file.text();
+  return [{ path: 'www/index.html', base64: b64EncodeUnicode(text) }];
+}
+
+async function collectFromZip(zipFile){
+  const zip = await JSZip.loadAsync(zipFile);
+  const entries = Object.values(zip.files).filter(f => !f.dir);
+  if(!entries.length) throw new Error('O .zip está vazio.');
+
+  // Detect common wrapper folder (e.g. "site/index.html" for all entries) and strip it
+  const paths = entries.map(f => f.name);
+  const hasRootIndex = paths.some(p => p === 'index.html');
+  let strip = '';
+  if(!hasRootIndex){
+    const first = paths[0];
+    const firstDir = first.includes('/') ? first.split('/')[0] : null;
+    if(firstDir && paths.every(p => p.startsWith(firstDir + '/'))){
+      strip = firstDir + '/';
+    }
+  }
+
+  const out = [];
+  for(const entry of entries){
+    let rel = entry.name;
+    if(strip && rel.startsWith(strip)) rel = rel.slice(strip.length);
+    if(!rel) continue;
+    const base64 = await entry.async('base64');
+    out.push({ path: 'www/' + rel, base64 });
+  }
+  const hasIndex = out.some(f => f.path === 'www/index.html');
+  if(!hasIndex) throw new Error('Não encontrei um index.html na raiz do .zip (nem dentro de uma única pasta de topo). Confirma a estrutura antes de reenviar.');
+  return out;
+}
+
+async function collectFromUrl(pageUrl, logFn){
+  const base = new URL(pageUrl);
+  logFn('$ a descarregar '+base.href+'...', 'log-dim');
+  const res = await fetch(base.href, { mode:'cors' });
+  if(!res.ok) throw new Error('Não consegui descarregar a página (status '+res.status+'). O servidor pode estar a bloquear CORS — usa o modo ZIP.');
+  const html = await res.text();
+  logFn('✓ HTML principal descarregado ('+html.length+' bytes).', 'log-ok');
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const refs = [];
+  doc.querySelectorAll('script[src]').forEach(el => refs.push(el.getAttribute('src')));
+  doc.querySelectorAll('link[href]').forEach(el => refs.push(el.getAttribute('href')));
+  doc.querySelectorAll('img[src]').forEach(el => refs.push(el.getAttribute('src')));
+  doc.querySelectorAll('source[src]').forEach(el => refs.push(el.getAttribute('src')));
+
+  const out = [{ path: 'www/index.html', base64: b64EncodeUnicode(html) }];
+  const seen = new Set(['index.html']);
+
+  for(const ref of refs){
+    if(!ref || ref.startsWith('data:')) continue;
+    let abs;
+    try{ abs = new URL(ref, base.href); } catch(e){ continue; }
+    if(abs.origin !== base.origin) { logFn('⚠ ignorado (origem diferente, provável CORS): '+abs.href, 'log-warn'); continue; }
+    let rel = abs.pathname.replace(/^\//,'');
+    // keep the path relative to the page's own folder when possible
+    const baseDir = base.pathname.replace(/[^/]*$/, '');
+    if(abs.pathname.startsWith(baseDir)) rel = abs.pathname.slice(baseDir.length);
+    if(seen.has(rel)) continue;
+    seen.add(rel);
+    try{
+      const r = await fetch(abs.href, { mode:'cors' });
+      if(!r.ok){ logFn('⚠ falhou ('+r.status+'): '+abs.href, 'log-warn'); continue; }
+      const buf = await r.arrayBuffer();
+      out.push({ path: 'www/' + rel, base64: arrayBufferToBase64(buf) });
+      logFn('✓ recurso obtido: '+rel, 'log-ok');
+    } catch(e){
+      logFn('⚠ bloqueado por CORS ou rede: '+abs.href+' — '+e.message, 'log-warn');
+    }
+  }
+  return out;
+}
+
+// ---------- Build flow ----------
 $('buildBtn').addEventListener('click', async ()=>{
-  term.style.display = 'block';
   termBody.innerHTML = '';
+  term.style.display = 'block';
   log('$ botão clicado — a validar campos...', 'log-dim');
+
   const repo = $('repo').value.trim();
   const token = $('token').value.trim();
   const appName = $('appName').value.trim();
   const packageId = $('packageId').value.trim();
   const mode = document.querySelector('.mode-tab.active').dataset.mode;
   const sourceUrl = $('sourceUrl').value.trim();
-  const file = selectedFile;
 
   if(!repo || !token || !appName || !packageId){
     log('✗ falta preencher: repositório, token, nome da app ou package ID.', 'log-err');
     return;
   }
-  if(mode==='file' && !file){ log('✗ escolhe um ficheiro HTML (a aba "Ficheiro HTML" está ativa mas nada foi escolhido).', 'log-err'); return; }
-  if(mode==='url' && !sourceUrl){ log('✗ indica o URL (a aba "URL" está ativa mas o campo está vazio).', 'log-err'); return; }
-  log('$ origem confirmada: modo="'+mode+'" '+(mode==='file' ? 'ficheiro="'+file.name+'"' : 'url="'+sourceUrl+'"'), 'log-ok');
+  if(mode==='url' && !sourceUrl){ log('✗ indica o URL do site.', 'log-err'); return; }
+  if(mode==='file' && !selectedFile){ log('✗ escolhe um ficheiro HTML.', 'log-err'); return; }
+  if(mode==='zip' && !selectedZip){ log('✗ escolhe um ficheiro .zip.', 'log-err'); return; }
 
   const [owner, repoName] = repo.split('/');
-  if(!owner || !repoName){ log('✗ formato do repositório inválido — tem de ser owner/repo. Valor lido: "'+repo+'"', 'log-err'); return; }
+  if(!owner || !repoName){ log('✗ formato do repositório inválido — tem de ser owner/repo.', 'log-err'); return; }
 
-  log('✓ campos válidos. owner="'+owner+'" repo="'+repoName+'"', 'log-ok');
   $('buildBtn').disabled = true;
   $('result').style.display = 'none';
 
@@ -441,26 +534,32 @@ $('buildBtn').addEventListener('click', async ()=>{
     }
     log('✓ repositório encontrado.', 'log-ok');
 
-    if(mode==='file'){
-      log('$ a ler ficheiro '+file.name+'...', 'log-dim');
-      const text = await file.text();
-      const content = b64EncodeUnicode(text);
+    log('$ a preparar conteúdo (modo: '+mode+')...', 'log-dim');
+    let files;
+    if(mode==='file') files = await collectFromFile(selectedFile);
+    else if(mode==='zip') files = await collectFromZip(selectedZip);
+    else files = await collectFromUrl(sourceUrl, log);
 
-      log('$ a enviar conteúdo para www/index.html...', 'log-dim');
-      const put = await uploadFileToRepo(owner, repoName, token, 'www/index.html', content, 'build: atualizar www/index.html via apk-builder');
+    log('✓ '+files.length+' ficheiro(s) prontos para enviar:', 'log-ok');
+    files.slice(0,20).forEach(f => log('   '+f.path, 'log-dim'));
+    if(files.length > 20) log('   … e mais '+(files.length-20)+' ficheiro(s)', 'log-dim');
+
+    log('$ a enviar ficheiros para www/...', 'log-dim');
+    for(const f of files){
+      const put = await uploadFileToRepo(owner, repoName, token, f.path, f.base64, 'build: atualizar '+f.path+' via apk-builder');
       if(!put.ok){
-        const err = await put.json();
-        log('✗ falha ao enviar ficheiro: '+(err.message||put.status), 'log-err');
+        const err = await put.json().catch(()=>({}));
+        log('✗ falha ao enviar '+f.path+': '+(err.message||put.status), 'log-err');
         $('buildBtn').disabled = false;
         return;
       }
-      log('✓ ficheiro enviado.', 'log-ok');
+      log('  ✓ '+f.path, 'log-dim');
     }
+    log('✓ todos os ficheiros enviados.', 'log-ok');
 
     if(selectedIcon){
-      log('$ a processar ícone '+selectedIcon.name+' (a redimensionar para 1024×1024)...', 'log-dim');
+      log('$ a processar ícone...', 'log-dim');
       const iconB64 = await resizeImageToSquarePng(selectedIcon, 1024);
-      log('$ a enviar ícone processado...', 'log-dim');
       const iconPut = await uploadFileToRepo(owner, repoName, token, 'resources/icon.png', iconB64, 'build: atualizar ícone via apk-builder');
       if(!iconPut.ok){
         const err = await iconPut.json().catch(()=>({message:'resposta inválida do GitHub'}));
@@ -471,6 +570,9 @@ $('buildBtn').addEventListener('click', async ()=>{
       log('✓ ícone enviado.', 'log-ok');
     }
 
+    // IMPORTANT: always dispatch as source_mode "file" — the real content is already
+    // materialized under www/, so the workflow must never fall back to generating
+    // a redirect-only page for us.
     log('$ a disparar workflow build-apk.yml...', 'log-dim');
     const dispatch = await ghApi(`/repos/${owner}/${repoName}/actions/workflows/build-apk.yml/dispatches`, {
       method:'POST',
@@ -479,8 +581,8 @@ $('buildBtn').addEventListener('click', async ()=>{
         inputs:{
           app_name: appName,
           package_id: packageId,
-          source_mode: mode,
-          source_url: mode==='url' ? sourceUrl : ''
+          source_mode: 'file',
+          source_url: ''
         }
       })
     }, token);
@@ -495,17 +597,13 @@ $('buildBtn').addEventListener('click', async ()=>{
     log('✓ workflow disparado.', 'log-ok');
     log('$ à espera que o GitHub Actions comece a correr...', 'log-dim');
 
-    // Poll for the run
-    let runId = null;
-    let attempts = 0;
+    let runId = null, attempts = 0;
     while(!runId && attempts < 15){
       await new Promise(r=>setTimeout(r, 3000));
       attempts++;
       const runsRes = await ghApi(`/repos/${owner}/${repoName}/actions/workflows/build-apk.yml/runs?per_page=1`, {}, token);
       const runsJson = await runsRes.json();
-      if(runsJson.workflow_runs && runsJson.workflow_runs.length){
-        runId = runsJson.workflow_runs[0].id;
-      }
+      if(runsJson.workflow_runs && runsJson.workflow_runs.length) runId = runsJson.workflow_runs[0].id;
     }
     if(!runId){
       log('✗ não encontrei o run. Verifica manualmente no separador Actions do repositório.', 'log-err');
