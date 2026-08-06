@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>apk:// — HTML para APK, grátis</title>
+<style>
+  :root{
+    --bg:#0B0F0E;
+    --panel:#111613;
+    --panel-2:#161C18;
+    --line:#26312B;
+    --text:#D7DFD9;
+    --dim:#7C8B82;
+    --accent:#3DDC84;
+    --accent-dim:#1E7A4A;
+    --warn:#F0B429;
+    --err:#F85149;
+    --mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); line-height:1.5;
+  }
+  @font-face{}
+  .wrap{max-width:760px;margin:0 auto;padding:48px 20px 100px;}
+
+  header{margin-bottom:36px;}
+  .brand{
+    font-family:var(--mono); font-size:14px; color:var(--accent);
+    letter-spacing:.08em; display:flex; align-items:center; gap:8px;
+  }
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 8px var(--accent); animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  h1{
+    font-family:var(--mono); font-size:28px; font-weight:600; margin:14px 0 6px;
+    letter-spacing:-0.01em;
+  }
+  h1 span{color:var(--dim);}
+  .sub{color:var(--dim); font-size:14.5px; max-width:540px;}
+
+  .steps{display:flex; gap:6px; margin:28px 0 22px; font-family:var(--mono); font-size:12px;}
+  .step-pill{
+    padding:5px 10px; border:1px solid var(--line); border-radius:4px; color:var(--dim);
+  }
+  .step-pill.active{border-color:var(--accent-dim); color:var(--accent); background:rgba(61,220,132,.06);}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:22px; margin-bottom:16px;
+  }
+  .panel h2{
+    font-family:var(--mono); font-size:13px; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--dim); margin:0 0 16px; font-weight:600;
+  }
+  label{
+    display:block; font-size:13px; color:var(--dim); margin-bottom:5px; font-family:var(--mono);
+  }
+  input[type=text], input[type=password], select, textarea{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    padding:10px 12px; border-radius:5px; font-family:var(--mono); font-size:13.5px;
+    margin-bottom:14px; outline:none;
+  }
+  input:focus, select:focus, textarea:focus{border-color:var(--accent-dim);}
+  .row{display:flex; gap:12px;}
+  .row > div{flex:1;}
+  .hint{font-size:12px; color:var(--dim); margin-top:-10px; margin-bottom:14px;}
+  .hint a{color:var(--accent);}
+
+  .mode-tabs{display:flex; gap:8px; margin-bottom:14px;}
+  .mode-tab{
+    flex:1; text-align:center; padding:8px; border:1px solid var(--line); border-radius:5px;
+    cursor:pointer; font-family:var(--mono); font-size:12.5px; color:var(--dim);
+  }
+  .mode-tab.active{border-color:var(--accent-dim); color:var(--accent); background:rgba(61,220,132,.06);}
+  .mode-panel{display:none;}
+  .mode-panel.active{display:block;}
+
+  .file-drop{
+    border:1px dashed var(--line); border-radius:6px; padding:22px; text-align:center;
+    color:var(--dim); font-family:var(--mono); font-size:13px; cursor:pointer; margin-bottom:14px;
+  }
+  .file-drop.has-file{border-color:var(--accent-dim); color:var(--accent);}
+  .file-drop input{display:none;}
+
+  button.primary{
+    width:100%; background:var(--accent); color:#04140B; border:none; border-radius:6px;
+    padding:13px; font-family:var(--mono); font-size:14px; font-weight:600; cursor:pointer;
+    letter-spacing:.02em;
+  }
+  button.primary:disabled{background:var(--line); color:var(--dim); cursor:not-allowed;}
+  button.primary:hover:not(:disabled){background:#4FE896;}
+
+  .term{
+    background:#070A08; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-top:16px;
+  }
+  .term-bar{
+    background:var(--panel-2); padding:8px 12px; display:flex; gap:6px; align-items:center;
+    border-bottom:1px solid var(--line);
+  }
+  .term-bar .d{width:9px;height:9px;border-radius:50%;}
+  .term-bar .d1{background:#F85149;} .term-bar .d2{background:#F0B429;} .term-bar .d3{background:#3DDC84;}
+  .term-bar span{margin-left:8px; font-family:var(--mono); font-size:11.5px; color:var(--dim);}
+  .term-body{
+    padding:14px 16px; font-family:var(--mono); font-size:12.5px; max-height:280px;
+    overflow-y:auto; white-space:pre-wrap;
+  }
+  .log-line{margin-bottom:3px;}
+  .log-ok{color:var(--accent);}
+  .log-warn{color:var(--warn);}
+  .log-err{color:var(--err);}
+  .log-dim{color:var(--dim);}
+  .cursor{display:inline-block;width:7px;height:13px;background:var(--accent);vertical-align:middle;
+    animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .result{
+    margin-top:14px; padding:16px; border:1px solid var(--accent-dim); border-radius:6px;
+    background:rgba(61,220,132,.05); display:none;
+  }
+  .result a.dl{
+    display:inline-block; margin-top:8px; background:var(--accent); color:#04140B;
+    padding:9px 16px; border-radius:5px; text-decoration:none; font-family:var(--mono);
+    font-size:13px; font-weight:600;
+  }
+
+  details{margin-top:20px; font-size:13px; color:var(--dim);}
+  details summary{cursor:pointer; font-family:var(--mono); color:var(--accent); margin-bottom:8px;}
+  details ol{padding-left:18px;} details li{margin-bottom:6px;}
+  code{background:var(--panel-2); padding:2px 5px; border-radius:3px; font-family:var(--mono); font-size:12px;}
+  a{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand"><span class="dot"></span>APK://BUILD — grátis, sem servidor próprio</div>
+    <h1>HTML <span>→</span> APK</h1>
+    <p class="sub">Carrega a tua app (ou dá o URL do GitHub Pages), e um workflow do GitHub Actions compila e assina o APK por ti. Sem custos, sem contas pagas.</p>
+  </header>
+
+  <div class="steps">
+    <div class="step-pill active" id="pill-1">1 · Repositório</div>
+    <div class="step-pill" id="pill-2">2 · App</div>
+    <div class="step-pill" id="pill-3">3 · Build</div>
+  </div>
+
+  <!-- STEP 1: GitHub connection -->
+  <div class="panel">
+    <h2>Ligação ao GitHub</h2>
+    <div class="row">
+      <div>
+        <label>Repositório (owner/nome)</label>
+        <input type="text" id="repo" placeholder="ex: alberto-dev/medbi-store-apk">
+      </div>
+      <div>
+        <label>Personal Access Token</label>
+        <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxx">
+      </div>
+    </div>
+    <p class="hint">
+      O token precisa dos scopes <code>repo</code> e <code>workflow</code>.
+      Cria um em <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens</a>.
+      Nada disto é enviado para lado nenhum além da API oficial do GitHub — corre tudo no teu browser.
+    </p>
+  </div>
+
+  <!-- STEP 2: App config -->
+  <div class="panel">
+    <h2>Configuração da app</h2>
+    <div class="row">
+      <div>
+        <label>Nome da app</label>
+        <input type="text" id="appName" placeholder="ex: MEDBI Store">
+      </div>
+      <div>
+        <label>Package ID</label>
+        <input type="text" id="packageId" placeholder="com.medbi.store">
+      </div>
+    </div>
+
+    <label>Origem do conteúdo</label>
+    <div class="mode-tabs">
+      <div class="mode-tab active" data-mode="file">Ficheiro HTML</div>
+      <div class="mode-tab" data-mode="url">URL (GitHub Pages)</div>
+    </div>
+
+    <div class="mode-panel active" id="mode-file">
+      <div class="file-drop" id="dropZone">
+        <input type="file" id="fileInput" accept=".html,.htm">
+      </div>
+    </div>
+    <div class="mode-panel" id="mode-url">
+      <label>URL da app já publicada</label>
+      <input type="text" id="sourceUrl" placeholder="https://alberto.github.io/medbi-store/">
+    </div>
+
+    <label style="margin-top:8px;">Ícone da app (opcional)</label>
+    <div class="file-drop" id="iconDropZone">
+      <input type="file" id="iconInput" accept="image/png,image/jpeg">
+    </div>
+    <p class="hint">Ideal: imagem quadrada, pelo menos 1024×1024px, fundo sólido ou transparente (PNG). Se não escolheres nenhuma, fica o ícone padrão do Capacitor.</p>
+  </div>
+
+  <button class="primary" id="buildBtn">Iniciar build</button>
+
+  <div class="term" id="term" style="display:none">
+    <div class="term-bar">
+      <div class="d d1"></div><div class="d d2"></div><div class="d d3"></div>
+      <span id="termTitle">build.log</span>
+    </div>
+    <div class="term-body" id="termBody"></div>
+  </div>
+
+  <div class="result" id="result">
+    <div style="font-family:var(--mono);color:var(--accent);font-size:13.5px;">✓ Build concluído</div>
+    <div style="color:var(--dim);font-size:12.5px;margin-top:4px;">O APK está pronto na Release do teu repositório.</div>
+    <a class="dl" id="dlLink" href="#" target="_blank">Descarregar APK</a>
+  </div>
+
+  <details>
+    <summary>Configuração inicial (fazer uma vez por repositório)</summary>
+    <ol>
+      <li>Cria um repositório novo (pode ser privado) no GitHub, só para os builds.</li>
+      <li>Copia o ficheiro <code>build-apk.yml</code> (fornecido junto com este index) para <code>.github/workflows/build-apk.yml</code> nesse repositório.</li>
+      <li>Faz commit e push desse ficheiro — sem isto o GitHub não sabe como compilar.</li>
+      <li>Gera um token em <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens</a> com scopes <code>repo</code> + <code>workflow</code>.</li>
+      <li>Preenche os campos acima e clica "Iniciar build".</li>
+    </ol>
+    <p><strong>Nota sobre assinatura:</strong> o workflow gera uma keystore nova a cada build. Isso é suficiente para testar/instalar, mas se quiseres publicar actualizações da mesma app mais tarde (sem forçar desinstalação), vais precisar de fixar uma keystore fixa como <em>secret</em> do repositório — posso ajudar-te com isso depois.</p>
+  </details>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const termBody = $('termBody');
+const term = $('term');
+
+function log(msg, cls){
+  const line = document.createElement('div');
+  line.className = 'log-line' + (cls ? ' '+cls : '');
+  line.textContent = msg;
+  termBody.appendChild(line);
+  termBody.scrollTop = termBody.scrollHeight;
+}
+
+// Mode tabs
+document.querySelectorAll('.mode-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.mode-panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    $('mode-'+tab.dataset.mode).classList.add('active');
+  });
+});
+
+// File picker
+let selectedFile = null;
+const dropZoneLabel = document.createElement('span');
+dropZoneLabel.id = 'dropZoneLabel';
+dropZoneLabel.textContent = '📄 clica para escolher o teu index.html (single-file)';
+$('dropZone').insertBefore(dropZoneLabel, $('fileInput'));
+
+$('dropZone').addEventListener('click', ()=> $('fileInput').click());
+$('fileInput').addEventListener('change', (e)=>{
+  const f = e.target.files[0];
+  if(f){
+    selectedFile = f;
+    $('dropZone').classList.add('has-file');
+    dropZoneLabel.textContent = '✓ ' + f.name;
+  }
+});
+
+// Icon picker
+let selectedIcon = null;
+const iconDropZoneLabel = document.createElement('span');
+iconDropZoneLabel.textContent = '🖼️ clica para escolher o ícone (PNG/JPG)';
+$('iconDropZone').insertBefore(iconDropZoneLabel, $('iconInput'));
+
+$('iconDropZone').addEventListener('click', ()=> $('iconInput').click());
+$('iconInput').addEventListener('change', (e)=>{
+  const f = e.target.files[0];
+  if(f){
+    selectedIcon = f;
+    $('iconDropZone').classList.add('has-file');
+    iconDropZoneLabel.textContent = '✓ ' + f.name;
+  }
+});
+
+function b64EncodeUnicode(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result.split(',')[1]); // remove "data:...;base64,"
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadFileToRepo(owner, repoName, token, path, base64content, commitMessage){
+  let sha = undefined;
+  const existing = await ghApi(`/repos/${owner}/${repoName}/contents/${path}`, {}, token);
+  if(existing.ok){
+    const j = await existing.json();
+    sha = j.sha;
+  }
+  return ghApi(`/repos/${owner}/${repoName}/contents/${path}`, {
+    method:'PUT',
+    body: JSON.stringify({ message: commitMessage, content: base64content, sha: sha })
+  }, token);
+}
+
+async function ghApi(path, opts, token){
+  const res = await fetch('https://api.github.com'+path, {
+    ...opts,
+    headers:{
+      'Authorization': 'Bearer '+token,
+      'Accept':'application/vnd.github+json',
+      'Content-Type':'application/json',
+      ...(opts && opts.headers ? opts.headers : {})
+    }
+  });
+  return res;
+}
+
+// Mostra qualquer erro de JavaScript diretamente na página, mesmo sem consola aberta
+window.addEventListener('error', function(e){
+  term.style.display = 'block';
+  log('✗ erro de script: '+e.message+' (linha '+e.lineno+')', 'log-err');
+});
+window.addEventListener('unhandledrejection', function(e){
+  term.style.display = 'block';
+  log('✗ promessa rejeitada: '+(e.reason && e.reason.message ? e.reason.message : e.reason), 'log-err');
+});
+
+$('buildBtn').addEventListener('click', async ()=>{
+  term.style.display = 'block';
+  termBody.innerHTML = '';
+  log('$ botão clicado — a validar campos...', 'log-dim');
+  const repo = $('repo').value.trim();
+  const token = $('token').value.trim();
+  const appName = $('appName').value.trim();
+  const packageId = $('packageId').value.trim();
+  const mode = document.querySelector('.mode-tab.active').dataset.mode;
+  const sourceUrl = $('sourceUrl').value.trim();
+  const file = selectedFile;
+
+  if(!repo || !token || !appName || !packageId){
+    log('✗ falta preencher: repositório, token, nome da app ou package ID.', 'log-err');
+    return;
+  }
+  if(mode==='file' && !file){ log('✗ escolhe um ficheiro HTML.', 'log-err'); return; }
+  if(mode==='url' && !sourceUrl){ log('✗ indica o URL da app.', 'log-err'); return; }
+
+  const [owner, repoName] = repo.split('/');
+  if(!owner || !repoName){ log('✗ formato do repositório inválido — tem de ser owner/repo. Valor lido: "'+repo+'"', 'log-err'); return; }
+
+  log('✓ campos válidos. owner="'+owner+'" repo="'+repoName+'"', 'log-ok');
+  $('buildBtn').disabled = true;
+  $('result').style.display = 'none';
+
+  try{
+    log('$ a verificar acesso ao repositório...', 'log-dim');
+    const check = await ghApi(`/repos/${owner}/${repoName}`, {}, token);
+    if(!check.ok){
+      log('✗ não consegui aceder a '+repo+' — verifica o token e o nome do repositório.', 'log-err');
+      $('buildBtn').disabled = false;
+      return;
+    }
+    log('✓ repositório encontrado.', 'log-ok');
+
+    if(mode==='file'){
+      log('$ a ler ficheiro '+file.name+'...', 'log-dim');
+      const text = await file.text();
+      const content = b64EncodeUnicode(text);
+
+      log('$ a enviar conteúdo para www/index.html...', 'log-dim');
+      const put = await uploadFileToRepo(owner, repoName, token, 'www/index.html', content, 'build: atualizar www/index.html via apk-builder');
+      if(!put.ok){
+        const err = await put.json();
+        log('✗ falha ao enviar ficheiro: '+(err.message||put.status), 'log-err');
+        $('buildBtn').disabled = false;
+        return;
+      }
+      log('✓ ficheiro enviado.', 'log-ok');
+    }
+
+    if(selectedIcon){
+      log('$ a enviar ícone '+selectedIcon.name+'...', 'log-dim');
+      const iconB64 = await fileToBase64(selectedIcon);
+      const iconPut = await uploadFileToRepo(owner, repoName, token, 'resources/icon.png', iconB64, 'build: atualizar ícone via apk-builder');
+      if(!iconPut.ok){
+        const err = await iconPut.json();
+        log('✗ falha ao enviar ícone: '+(err.message||iconPut.status), 'log-err');
+        $('buildBtn').disabled = false;
+        return;
+      }
+      log('✓ ícone enviado.', 'log-ok');
+    }
+
+    log('$ a disparar workflow build-apk.yml...', 'log-dim');
+    const dispatch = await ghApi(`/repos/${owner}/${repoName}/actions/workflows/build-apk.yml/dispatches`, {
+      method:'POST',
+      body: JSON.stringify({
+        ref: 'main',
+        inputs:{
+          app_name: appName,
+          package_id: packageId,
+          source_mode: mode,
+          source_url: mode==='url' ? sourceUrl : ''
+        }
+      })
+    }, token);
+
+    if(dispatch.status !== 204){
+      const err = await dispatch.json().catch(()=>({}));
+      log('✗ não consegui disparar o workflow: '+(err.message||dispatch.status), 'log-err');
+      log('  confirma que .github/workflows/build-apk.yml existe no branch "main".', 'log-warn');
+      $('buildBtn').disabled = false;
+      return;
+    }
+    log('✓ workflow disparado.', 'log-ok');
+    log('$ à espera que o GitHub Actions comece a correr...', 'log-dim');
+
+    // Poll for the run
+    let runId = null;
+    let attempts = 0;
+    while(!runId && attempts < 15){
+      await new Promise(r=>setTimeout(r, 3000));
+      attempts++;
+      const runsRes = await ghApi(`/repos/${owner}/${repoName}/actions/workflows/build-apk.yml/runs?per_page=1`, {}, token);
+      const runsJson = await runsRes.json();
+      if(runsJson.workflow_runs && runsJson.workflow_runs.length){
+        runId = runsJson.workflow_runs[0].id;
+      }
+    }
+    if(!runId){
+      log('✗ não encontrei o run. Verifica manualmente no separador Actions do repositório.', 'log-err');
+      $('buildBtn').disabled = false;
+      return;
+    }
+    log('✓ run encontrado (#'+runId+'). A acompanhar progresso...', 'log-ok');
+
+    let status = 'queued';
+    while(status !== 'completed'){
+      await new Promise(r=>setTimeout(r, 6000));
+      const runRes = await ghApi(`/repos/${owner}/${repoName}/actions/runs/${runId}`, {}, token);
+      const runJson = await runRes.json();
+      status = runJson.status;
+      log('… estado: '+status, 'log-dim');
+      if(status === 'completed'){
+        if(runJson.conclusion === 'success'){
+          log('✓ build concluído com sucesso!', 'log-ok');
+        } else {
+          log('✗ build falhou (conclusão: '+runJson.conclusion+').', 'log-err');
+          log('  vê os logs completos em: '+runJson.html_url, 'log-warn');
+          $('buildBtn').disabled = false;
+          return;
+        }
+      }
+    }
+
+    log('$ a procurar a release com o APK...', 'log-dim');
+    const releasesRes = await ghApi(`/repos/${owner}/${repoName}/releases?per_page=1`, {}, token);
+    const releasesJson = await releasesRes.json();
+    if(releasesJson.length && releasesJson[0].assets && releasesJson[0].assets.length){
+      const apkAsset = releasesJson[0].assets.find(a=>a.name.endsWith('.apk'));
+      if(apkAsset){
+        log('✓ APK disponível: '+apkAsset.name, 'log-ok');
+        $('dlLink').href = apkAsset.browser_download_url;
+        $('result').style.display = 'block';
+      } else {
+        log('⚠ release encontrada mas sem ficheiro .apk anexado.', 'log-warn');
+      }
+    } else {
+      log('⚠ não encontrei release. Confirma no separador Releases do repositório.', 'log-warn');
+    }
+
+  } catch(e){
+    log('✗ erro inesperado: '+e.message, 'log-err');
+    console.error(e);
+  }
+  $('buildBtn').disabled = false;
+});
+</script>
+</body>
+</html>
