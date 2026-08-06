@@ -90,12 +90,24 @@ jobs:
 
       - name: Gerar keystore de assinatura
         run: |
-          keytool -genkeypair -v \
-            -keystore release.keystore \
-            -alias appkey \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "android123" -keypass "android123" \
-            -dname "CN=${{ github.event.inputs.app_name }}, OU=Dev, O=Dev, L=Lisboa, S=Lisboa, C=PT"
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "A usar keystore fixa (secret KEYSTORE_BASE64) — assinatura consistente entre builds."
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+            echo "STORE_PASS=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+            echo "KEY_PASS=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          else
+            echo "⚠ Sem keystore fixa configurada — a gerar uma nova (apps futuras não vão poder atualizar esta instalação sem desinstalar primeiro)."
+            keytool -genkeypair -v \
+              -keystore release.keystore \
+              -alias appkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "android123" -keypass "android123" \
+              -dname "CN=${{ github.event.inputs.app_name }}, OU=Dev, O=Dev, L=Lisboa, S=Lisboa, C=PT"
+            echo "STORE_PASS=android123" >> $GITHUB_ENV
+            echo "KEY_ALIAS=appkey" >> $GITHUB_ENV
+            echo "KEY_PASS=android123" >> $GITHUB_ENV
+          fi
 
       - name: Build APK assinado
         working-directory: android
@@ -103,9 +115,9 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/release.keystore" \
-            -Pandroid.injected.signing.store.password=android123 \
-            -Pandroid.injected.signing.key.alias=appkey \
-            -Pandroid.injected.signing.key.password=android123
+            -Pandroid.injected.signing.store.password="$STORE_PASS" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASS"
 
       - name: Publicar Release com o APK
         uses: softprops/action-gh-release@v2
