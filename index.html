@@ -181,6 +181,13 @@
   #iconDropZone.has-file svg{ display:none; }
   #iconDropZone.has-file .icon-preview{ display:block; }
 
+  .icon-remove-btn{
+    display:none; margin:-8px 0 14px; background:transparent; border:none; color:var(--err);
+    font-family:var(--mono); font-size:11.5px; cursor:pointer; padding:2px 0; text-decoration:underline;
+  }
+  .icon-remove-btn:hover{ color:#FF8177; }
+  #iconDropZone.has-file + .icon-remove-btn{ display:inline-block; }
+
   /* ---------- terminal ---------- */
   .term{
     background:#060907; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-top:18px;
@@ -218,6 +225,14 @@
     font-size:12.5px; font-weight:600; letter-spacing:.02em;
   }
   .result a.dl:hover{background:#54E89D;}
+  .result-actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px;}
+  .result-actions a.dl{margin-top:0;}
+  .back-btn{
+    display:inline-flex; align-items:center; gap:6px; background:transparent; color:var(--dim);
+    border:1px solid var(--line); padding:10px 16px; border-radius:6px; font-family:var(--mono);
+    font-size:12.5px; font-weight:600; letter-spacing:.02em; cursor:pointer; transition:all .15s ease;
+  }
+  .back-btn:hover{border-color:var(--dim-2); color:var(--text); background:var(--panel-2);}
 
   code{background:var(--panel-2); padding:2px 5px; border-radius:3px; font-family:var(--mono); font-size:12px; border:1px solid var(--line);}
   a{color:var(--accent);}
@@ -324,15 +339,13 @@
   </header>
 
   <div class="pipeline">
-    <div class="pnode active" id="pill-1"><div class="ring">1</div><div class="label">Repositório</div></div>
+    <div class="pnode active" id="pill-1"><div class="ring">1</div><div class="label">App</div></div>
     <div class="ptrack" id="track-1"></div>
-    <div class="pnode" id="pill-2"><div class="ring">2</div><div class="label">App</div></div>
-    <div class="ptrack" id="track-2"></div>
-    <div class="pnode" id="pill-3"><div class="ring">3</div><div class="label">Build</div></div>
+    <div class="pnode" id="pill-2"><div class="ring">2</div><div class="label">Build</div></div>
   </div>
 
-  <!-- STEP 1: GitHub connection -->
-  <div class="panel">
+  <!-- GitHub connection (oculto — valores fixos, só usados internamente pelo build; já não conta como passo numerado) -->
+  <div class="panel" id="githubPanel" style="display:none;">
     <h2><span class="n">01</span> Ligação ao GitHub</h2>
     <label>Repositório (owner/nome) <span class="fixed-tag">fixo</span></label>
     <input type="text" id="repo" value="marcosnatomanaisna-ship-it/MEDBI-APK" readonly>
@@ -341,9 +354,9 @@
     <div class="hint">🔒 token do GitHub gerido pelo servidor (variável de ambiente <code>GITHUB_TOKEN</code>) — nada a escrever aqui.</div>
   </div>
 
-  <!-- STEP 2: App config -->
+  <!-- STEP 1: App config -->
   <div class="panel">
-    <h2><span class="n">02</span> Configuração da app</h2>
+    <h2><span class="n">01</span> Configuração da app</h2>
     <div class="row">
       <div>
         <label>Nome da app</label>
@@ -391,6 +404,7 @@
       <img class="icon-preview" id="iconPreviewImg" alt="pré-visualização do ícone">
       <input type="file" id="iconInput" accept="image/png,image/jpeg">
     </div>
+    <button type="button" class="icon-remove-btn" id="iconRemoveBtn">🗑 Remover ícone</button>
 
     <div id="sourceSummary" style="margin-top:14px; padding:11px 13px; border:1px solid var(--accent-dim); border-radius:7px; background:var(--accent-soft); font-family:var(--mono); font-size:12.5px; color:var(--accent);">
       ⚠ nenhuma origem selecionada ainda
@@ -413,7 +427,10 @@
     <div>
       <div style="font-family:var(--mono);color:var(--accent);font-size:13.5px;font-weight:600;">Build concluído</div>
       <div style="color:var(--dim);font-size:12.5px;margin-top:4px;" id="resultDesc">O APK está pronto na Release do teu repositório, com o conteúdo embutido.</div>
-      <a class="dl" id="dlLink" href="#" target="_blank">↓ Descarregar APK</a>
+      <div class="result-actions">
+        <a class="dl" id="dlLink" href="#" target="_blank">↓ Descarregar APK</a>
+        <button class="back-btn" id="backBtn" type="button">← Voltar</button>
+      </div>
     </div>
   </div>
 
@@ -460,26 +477,24 @@ window.addEventListener('unhandledrejection', function(e){
 });
 
 // ---------- Pipeline indicator ----------
+// ---------- Pipeline indicator ----------
 function setPipeline(step, state){
-  // step: 1|2|3, state: 'active'|'done'|'error'
-  for(let i=1;i<=3;i++){
+  // step: 1|2, state: 'active'|'done'|'error'
+  for(let i=1;i<=2;i++){
     const node = $('pill-'+i);
     node.classList.remove('active','done','error');
     if(i < step) node.classList.add('done');
     else if(i === step) node.classList.add(state === 'done' ? 'done' : (state === 'error' ? 'error' : 'active'));
   }
-  const t1 = $('track-1'), t2 = $('track-2');
+  const t1 = $('track-1');
   t1.classList.toggle('filled', step > 1 || (step===1 && state==='done'));
-  t2.classList.toggle('filled', step > 2 || (step===2 && state==='done'));
 }
 function refreshPipeline(){
-  const step1ok = true; // repo e backend são fixos; token já não é preenchido aqui
   const mode = document.querySelector('#sourceModeTabs .mode-tab.active').dataset.mode;
   const sourceOk = mode==='url' ? !!$('sourceUrl').value.trim() : (mode==='file' ? !!selectedFile : !!selectedZip);
-  const step2ok = $('appName').value.trim() && $('packageId').value.trim() && sourceOk;
+  const step1ok = $('appName').value.trim() && $('packageId').value.trim() && sourceOk;
   if(!step1ok){ setPipeline(1,'active'); return; }
-  if(!step2ok){ setPipeline(2,'active'); return; }
-  setPipeline(3,'active');
+  setPipeline(2,'active');
 }
 
 // ---------- Mode tabs ----------
@@ -546,8 +561,9 @@ $('zipInput').addEventListener('change', (e)=>{
 });
 
 let selectedIcon = null;
+const iconDropZoneDefaultLabel = 'clica para escolher o ícone (PNG/JPG)';
 const iconDropZoneLabel = document.createElement('span');
-iconDropZoneLabel.textContent = 'clica para escolher o ícone (PNG/JPG)';
+iconDropZoneLabel.textContent = iconDropZoneDefaultLabel;
 $('iconDropZone').appendChild(iconDropZoneLabel);
 $('iconDropZone').addEventListener('click', ()=> $('iconInput').click());
 $('iconInput').addEventListener('change', (e)=>{
@@ -559,6 +575,13 @@ $('iconInput').addEventListener('change', (e)=>{
     const url = URL.createObjectURL(f);
     $('iconPreviewImg').src = url;
   }
+});
+$('iconRemoveBtn').addEventListener('click', ()=>{
+  selectedIcon = null;
+  $('iconInput').value = '';
+  $('iconDropZone').classList.remove('has-file');
+  iconDropZoneLabel.textContent = iconDropZoneDefaultLabel;
+  $('iconPreviewImg').src = '';
 });
 
 // ---------- Helpers ----------
@@ -719,7 +742,7 @@ async function performBuild(){
 
   setBuildLoading(true);
   $('result').style.display = 'none';
-  setPipeline(3, 'active');
+  setPipeline(2, 'active');
 
   try{
     log('$ a preparar conteúdo (modo: '+mode+')...', 'log-dim');
@@ -760,7 +783,7 @@ async function performBuild(){
     if(!startRes.ok){
       const err = await startRes.json().catch(()=>({}));
       log('✗ backend recusou o pedido: '+(err.error||startRes.status), 'log-err');
-      setPipeline(3, 'error');
+      setPipeline(2, 'error');
       setBuildLoading(false);
       showRetry();
       return;
@@ -786,7 +809,7 @@ async function performBuild(){
           ? 'O AAB está pronto na Release do teu repositório — pronto a submeter na Play Store.'
           : 'O APK está pronto na Release do teu repositório, com o conteúdo embutido.';
         $('result').style.display = 'flex';
-        setPipeline(3, 'done');
+        setPipeline(2, 'done');
         addHistoryEntry({
           id: jobId + '-' + Date.now(),
           name: appName, packageId, mode, format,
@@ -796,7 +819,7 @@ async function performBuild(){
         });
       } else if(data.status === 'error'){
         done = true;
-        setPipeline(3, 'error');
+        setPipeline(2, 'error');
         showRetry();
       }
     }
@@ -804,7 +827,7 @@ async function performBuild(){
   } catch(e){
     log('✗ erro inesperado: '+(e && e.message ? e.message : String(e)), 'log-err');
     console.error(e);
-    setPipeline(3, 'error');
+    setPipeline(2, 'error');
     showRetry();
   }
   setBuildLoading(false);
@@ -812,6 +835,17 @@ async function performBuild(){
 
 $('buildBtn').addEventListener('click', performBuild);
 $('retryBtn').addEventListener('click', performBuild);
+
+// ---------- Voltar ao início (depois de descarregar, sem ter de fechar a app) ----------
+function resetToStart(){
+  $('result').style.display = 'none';
+  hideRetry();
+  term.style.display = 'none';
+  termBody.innerHTML = '';
+  refreshPipeline();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+$('backBtn').addEventListener('click', resetToStart);
 
 // ---------- Builds guardados (histórico local) ----------
 const HISTORY_KEY = 'apkbuild_history_v1';
