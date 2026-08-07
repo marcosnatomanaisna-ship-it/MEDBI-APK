@@ -42,7 +42,9 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-          cache: 'gradle'
+
+      - name: Configurar cache do Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Preparar pasta www/
         run: |
