@@ -72,8 +72,26 @@ jobs:
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
 
-      - name: Inicializar projecto Capacitor
-        run: npx cap init "${{ github.event.inputs.app_name }}" "${{ github.event.inputs.package_id }}" --web-dir www
+      - name: Inicializar configuração do Capacitor
+        # Escrevemos o capacitor.config.json à mão em vez de usar "npx cap init":
+        # nas versões atuais do CLI, "cap init" gera capacitor.config.TS (não .json),
+        # e o passo seguinte (server.url em modo url) precisa de encontrar o .json.
+        # Isto também evita ambiguidade: com os dois ficheiros a existir, o Capacitor
+        # prioriza o .ts e as edições feitas ao .json seriam ignoradas.
+        env:
+          APP_NAME: ${{ github.event.inputs.app_name }}
+          PACKAGE_ID: ${{ github.event.inputs.package_id }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const cfg = {
+              appId: process.env.PACKAGE_ID,
+              appName: process.env.APP_NAME,
+              webDir: 'www'
+            };
+            fs.writeFileSync('capacitor.config.json', JSON.stringify(cfg, null, 2));
+            console.log('capacitor.config.json:', JSON.stringify(cfg, null, 2));
+          "
 
       - name: Configurar server.url (modo url — WebView vivo, tipo AppMint)
         if: ${{ github.event.inputs.source_mode == 'url' }}
