@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK/AAB
 
 on:
   workflow_dispatch:
@@ -17,6 +17,10 @@ on:
         description: 'URL da app (só usado se source_mode = url)'
         required: false
         default: ''
+      output_format:
+        description: 'apk ou aab'
+        required: true
+        default: 'apk'
 
 permissions:
   contents: write
@@ -126,36 +130,55 @@ jobs:
             echo "KEY_PASS=android123" >> $GITHUB_ENV
           fi
 
-      - name: Build APK assinado
+      - name: Build APK/AAB assinado
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/release.keystore" \
-            -Pandroid.injected.signing.store.password="$STORE_PASS" \
-            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASS"
+          if [ "${{ github.event.inputs.output_format }}" = "aab" ]; then
+            echo "A gerar AAB (bundleRelease)..."
+            ./gradlew bundleRelease \
+              -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/release.keystore" \
+              -Pandroid.injected.signing.store.password="$STORE_PASS" \
+              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+              -Pandroid.injected.signing.key.password="$KEY_PASS"
+          else
+            echo "A gerar APK (assembleRelease)..."
+            ./gradlew assembleRelease \
+              -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/release.keystore" \
+              -Pandroid.injected.signing.store.password="$STORE_PASS" \
+              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+              -Pandroid.injected.signing.key.password="$KEY_PASS"
+          fi
 
-      - name: Renomear APK para o nome da app
-        id: apkname
+      - name: Renomear ficheiro final para o nome da app
+        id: outname
         run: |
           SAFE_NAME=$(echo "${{ github.event.inputs.app_name }}" \
             | iconv -f utf8 -t ascii//TRANSLIT 2>/dev/null \
             | sed -E 's/[^a-zA-Z0-9]+/-/g; s/^-+|-+$//g')
           if [ -z "$SAFE_NAME" ]; then SAFE_NAME="app"; fi
-          echo "apk_name=$SAFE_NAME.apk" >> "$GITHUB_OUTPUT"
-          cp "android/app/build/outputs/apk/release/app-release.apk" \
-             "android/app/build/outputs/apk/release/$SAFE_NAME.apk"
 
-      - name: Publicar Release com o APK
+          if [ "${{ github.event.inputs.output_format }}" = "aab" ]; then
+            SRC="android/app/build/outputs/bundle/release/app-release.aab"
+            OUT_NAME="$SAFE_NAME.aab"
+          else
+            SRC="android/app/build/outputs/apk/release/app-release.apk"
+            OUT_NAME="$SAFE_NAME.apk"
+          fi
+          DEST="$(dirname "$SRC")/$OUT_NAME"
+          cp "$SRC" "$DEST"
+          echo "out_name=$OUT_NAME" >> "$GITHUB_OUTPUT"
+          echo "out_path=$DEST" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Release com o ficheiro gerado
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: "${{ github.event.inputs.app_name }} — build #${{ github.run_number }}"
           body: |
-            APK gerado automaticamente.
+            ${{ github.event.inputs.output_format == 'aab' && 'AAB (Android App Bundle)' || 'APK' }} gerado automaticamente.
             Modo: `${{ github.event.inputs.source_mode }}`${{ github.event.inputs.source_mode == 'url' && format(' — WebView aponta para {0} (app vai buscar sempre a versão mais recente, sem precisar de rebuild)', github.event.inputs.source_url) || ' — conteúdo embutido offline no APK' }}
             Package: `${{ github.event.inputs.package_id }}`
-          files: android/app/build/outputs/apk/release/${{ steps.apkname.outputs.apk_name }}
+          files: ${{ steps.outname.outputs.out_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
