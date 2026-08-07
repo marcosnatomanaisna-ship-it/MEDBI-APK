@@ -334,18 +334,11 @@
   <!-- STEP 1: GitHub connection -->
   <div class="panel">
     <h2><span class="n">01</span> Ligação ao GitHub</h2>
-    <div class="row">
-      <div>
-        <label>Repositório (owner/nome) <span class="fixed-tag">fixo</span></label>
-        <input type="text" id="repo" value="marcosnatomanaisna-ship-it/MEDBI-APK" readonly>
-      </div>
-      <div>
-        <label>Personal Access Token</label>
-        <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxx">
-      </div>
-    </div>
+    <label>Repositório (owner/nome) <span class="fixed-tag">fixo</span></label>
+    <input type="text" id="repo" value="marcosnatomanaisna-ship-it/MEDBI-APK" readonly>
     <label>URL do backend <span class="fixed-tag">fixo</span></label>
     <input type="text" id="backendUrl" value="https://medbi-license-server.onrender.com/api/apk-build" readonly>
+    <div class="hint">🔒 token do GitHub gerido pelo servidor (variável de ambiente <code>GITHUB_TOKEN</code>) — nada a escrever aqui.</div>
   </div>
 
   <!-- STEP 2: App config -->
@@ -480,7 +473,7 @@ function setPipeline(step, state){
   t2.classList.toggle('filled', step > 2 || (step===2 && state==='done'));
 }
 function refreshPipeline(){
-  const step1ok = $('token').value.trim().length > 0;
+  const step1ok = true; // repo e backend são fixos; token já não é preenchido aqui
   const mode = document.querySelector('#sourceModeTabs .mode-tab.active').dataset.mode;
   const sourceOk = mode==='url' ? !!$('sourceUrl').value.trim() : (mode==='file' ? !!selectedFile : !!selectedZip);
   const step2ok = $('appName').value.trim() && $('packageId').value.trim() && sourceOk;
@@ -528,7 +521,6 @@ document.querySelectorAll('#formatTabs .mode-tab').forEach(tab=>{
 });
 
 $('sourceUrl').addEventListener('input', updateSourceSummary);
-$('token').addEventListener('input', refreshPipeline);
 $('appName').addEventListener('input', refreshPipeline);
 $('packageId').addEventListener('input', refreshPipeline);
 
@@ -700,7 +692,6 @@ async function performBuild(){
   log('$ botão clicado — a validar campos...', 'log-dim');
 
   const repo = $('repo').value.trim();
-  const token = $('token').value.trim();
   const appName = $('appName').value.trim();
   const packageId = $('packageId').value.trim();
   const backendUrl = $('backendUrl').value.trim().replace(/\/$/,'');
@@ -708,8 +699,8 @@ async function performBuild(){
   const sourceUrl = $('sourceUrl').value.trim();
   const format = outputFormat; // 'apk' | 'aab'
 
-  if(!repo || !token || !appName || !packageId){
-    log('✗ falta preencher: repositório, token, nome da app ou package ID.', 'log-err');
+  if(!repo || !appName || !packageId){
+    log('✗ falta preencher: repositório, nome da app ou package ID.', 'log-err');
     return;
   }
   if(!backendUrl){ log('✗ preenche o URL do backend (ver "Configuração inicial" em baixo).', 'log-err'); return; }
@@ -759,7 +750,7 @@ async function performBuild(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        repo: repoClean, token, appName, packageId,
+        repo: repoClean, appName, packageId,
         mode, // 'url' | 'file' | 'zip' — decide como o backend gera o capacitor.config.json
         outputFormat: format, // 'apk' | 'aab' — decide se o backend corre assembleRelease ou bundleRelease
         liveUrl: mode==='url' ? sourceUrl : undefined,
@@ -917,7 +908,7 @@ function reconfigureFrom(entry){
   updateSourceSummary();
   closeDrawer();
   window.scrollTo({top:0, behavior:'smooth'});
-  log('$ configuração de "'+entry.name+'" recarregada — confirma o ficheiro/ZIP se aplicável e o token, e inicia o build.', 'log-dim');
+  log('$ configuração de "'+entry.name+'" recarregada — confirma o ficheiro/ZIP se aplicável e inicia o build.', 'log-dim');
 }
 
 // ---------- Drawer open/close ----------
