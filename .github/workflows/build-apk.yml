@@ -43,14 +43,14 @@ jobs:
         run: |
           mkdir -p www
           if [ "${{ github.event.inputs.source_mode }}" = "url" ]; then
-            cat > www/index.html <<EOF
+            cat > www/index.html <<'EOF'
           <!DOCTYPE html>
-          <html><head><meta charset="utf-8">
-          <script>window.location.replace("${{ github.event.inputs.source_url }}");</script>
-          </head><body></body></html>
+          <html><head><meta charset="utf-8"></head><body>A carregar…</body></html>
           EOF
           fi
-          # em modo "file", www/index.html já foi commitado pelo index.html antes de disparar este workflow
+          # em modo "file", www/index.html já foi commitado pelo backend antes de disparar este workflow.
+          # em modo "url" este ficheiro é só um fallback local — quem manda é o
+          # server.url do capacitor.config.json, configurado no passo seguinte.
 
       - name: Instalar Capacitor
         run: |
@@ -59,6 +59,23 @@ jobs:
 
       - name: Inicializar projecto Capacitor
         run: npx cap init "${{ github.event.inputs.app_name }}" "${{ github.event.inputs.package_id }}" --web-dir www
+
+      - name: Configurar server.url (modo url — WebView vivo, tipo AppMint)
+        if: ${{ github.event.inputs.source_mode == 'url' }}
+        env:
+          SOURCE_URL: ${{ github.event.inputs.source_url }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = 'capacitor.config.json';
+            const cfg = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const url = process.env.SOURCE_URL;
+            cfg.server = cfg.server || {};
+            cfg.server.url = url;
+            cfg.server.cleartext = url.startsWith('http://');
+            fs.writeFileSync(path, JSON.stringify(cfg, null, 2));
+            console.log('capacitor.config.json:', JSON.stringify(cfg, null, 2));
+          "
 
       - name: Adicionar plataforma Android
         run: npx cap add android
@@ -136,7 +153,8 @@ jobs:
           tag_name: build-${{ github.run_number }}
           name: "${{ github.event.inputs.app_name }} — build #${{ github.run_number }}"
           body: |
-            APK gerado automaticamente a partir de `www/index.html` (ou URL fornecido).
+            APK gerado automaticamente.
+            Modo: `${{ github.event.inputs.source_mode }}`${{ github.event.inputs.source_mode == 'url' && format(' — WebView aponta para {0} (app vai buscar sempre a versão mais recente, sem precisar de rebuild)', github.event.inputs.source_url) || ' — conteúdo embutido offline no APK' }}
             Package: `${{ github.event.inputs.package_id }}`
           files: android/app/build/outputs/apk/release/${{ steps.apkname.outputs.apk_name }}
         env:
