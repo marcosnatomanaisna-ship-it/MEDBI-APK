@@ -119,6 +119,17 @@ jobs:
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASS"
 
+      - name: Renomear APK para o nome da app
+        id: apkname
+        run: |
+          SAFE_NAME=$(echo "${{ github.event.inputs.app_name }}" \
+            | iconv -f utf8 -t ascii//TRANSLIT 2>/dev/null \
+            | sed -E 's/[^a-zA-Z0-9]+/-/g; s/^-+|-+$//g')
+          if [ -z "$SAFE_NAME" ]; then SAFE_NAME="app"; fi
+          echo "apk_name=$SAFE_NAME.apk" >> "$GITHUB_OUTPUT"
+          cp "android/app/build/outputs/apk/release/app-release.apk" \
+             "android/app/build/outputs/apk/release/$SAFE_NAME.apk"
+
       - name: Publicar Release com o APK
         uses: softprops/action-gh-release@v2
         with:
@@ -127,6 +138,6 @@ jobs:
           body: |
             APK gerado automaticamente a partir de `www/index.html` (ou URL fornecido).
             Package: `${{ github.event.inputs.package_id }}`
-          files: android/app/build/outputs/apk/release/app-release.apk
+          files: android/app/build/outputs/apk/release/${{ steps.apkname.outputs.apk_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
