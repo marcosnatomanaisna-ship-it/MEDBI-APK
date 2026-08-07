@@ -65,6 +65,8 @@
     margin-bottom:14px; outline:none;
   }
   input:focus, select:focus, textarea:focus{border-color:var(--accent-dim);}
+  input:read-only{color:var(--dim); background:var(--panel); cursor:default;}
+  .fixed-tag{color:var(--accent); font-weight:normal; text-transform:none; letter-spacing:0;}
   .row{display:flex; gap:12px;}
   .row > div{flex:1;}
   .hint{font-size:12px; color:var(--dim); margin-top:-10px; margin-bottom:14px;}
@@ -167,8 +169,8 @@
     <h2>Ligação ao GitHub</h2>
     <div class="row">
       <div>
-        <label>Repositório (owner/nome)</label>
-        <input type="text" id="repo" placeholder="ex: alberto-dev/medbi-store-apk">
+        <label>Repositório (owner/nome) <span class="fixed-tag">· fixo</span></label>
+        <input type="text" id="repo" value="marcosnatomanaisna-ship-it/MEDBI-APK" readonly>
       </div>
       <div>
         <label>Personal Access Token</label>
@@ -178,10 +180,10 @@
     <p class="hint">
       O token precisa dos scopes <code>repo</code> e <code>workflow</code>.
     </p>
-    <label>URL do backend (que fala com o GitHub por ti)</label>
-    <input type="text" id="backendUrl" placeholder="https://o-teu-backend.onrender.com/api/apk-build">
+    <label>URL do backend (que fala com o GitHub por ti) <span class="fixed-tag">· fixo</span></label>
+    <input type="text" id="backendUrl" value="https://medbi-license-server.onrender.com/api/apk-build" readonly>
     <p class="hint">
-      Repo, token e ficheiros vão só para este backend teu num único pedido — é ele que fala com o GitHub, com ligação estável. Ver "Configuração inicial" em baixo para o deploy da rota.
+      Repo e backend já estão fixos para o teu servidor. Token e ficheiros vão só para lá num único pedido — é ele que fala com o GitHub, com ligação estável.
     </p>
   </div>
 
