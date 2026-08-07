@@ -42,6 +42,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+          cache: 'gradle'
 
       - name: Preparar pasta www/
         run: |
@@ -56,10 +57,18 @@ jobs:
           # em modo "url" este ficheiro é só um fallback local — quem manda é o
           # server.url do capacitor.config.json, configurado no passo seguinte.
 
+      - name: Cache de dependências npm (Capacitor)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: capacitor-deps-${{ runner.os }}-v2
+
       - name: Instalar Capacitor
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
 
       - name: Inicializar projecto Capacitor
         run: npx cap init "${{ github.event.inputs.app_name }}" "${{ github.event.inputs.package_id }}" --web-dir www
@@ -109,6 +118,15 @@ jobs:
           }
           EOF
 
+      - name: Otimizar definições do Gradle (paralelismo + cache de build)
+        run: |
+          cat >> android/gradle.properties <<'EOF'
+          org.gradle.parallel=true
+          org.gradle.caching=true
+          org.gradle.configureondemand=true
+          org.gradle.jvmargs=-Xmx4g -XX:+UseParallelGC
+          EOF
+
       - name: Gerar keystore de assinatura
         run: |
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
@@ -136,14 +154,14 @@ jobs:
           chmod +x gradlew
           if [ "${{ github.event.inputs.output_format }}" = "aab" ]; then
             echo "A gerar AAB (bundleRelease)..."
-            ./gradlew bundleRelease \
+            ./gradlew bundleRelease --build-cache --parallel \
               -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/release.keystore" \
               -Pandroid.injected.signing.store.password="$STORE_PASS" \
               -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
               -Pandroid.injected.signing.key.password="$KEY_PASS"
           else
             echo "A gerar APK (assembleRelease)..."
-            ./gradlew assembleRelease \
+            ./gradlew assembleRelease --build-cache --parallel \
               -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/release.keystore" \
               -Pandroid.injected.signing.store.password="$STORE_PASS" \
               -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
