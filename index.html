@@ -177,7 +177,11 @@
     </div>
     <p class="hint">
       O token precisa dos scopes <code>repo</code> e <code>workflow</code>.
-      Nada disto é enviado para lado nenhum além da API oficial do GitHub — corre tudo no teu browser.
+    </p>
+    <label>URL do backend (que fala com o GitHub por ti)</label>
+    <input type="text" id="backendUrl" placeholder="https://o-teu-backend.onrender.com/api/apk-build">
+    <p class="hint">
+      Repo, token e ficheiros vão só para este backend teu num único pedido — é ele que fala com o GitHub, com ligação estável. Ver "Configuração inicial" em baixo para o deploy da rota.
     </p>
   </div>
 
@@ -253,9 +257,10 @@
       <li>Cria um repositório novo (pode ser privado) no GitHub, só para os builds.</li>
       <li>Garante que <code>.github/workflows/build-apk.yml</code> existe nesse repositório e faz <code>npx cap sync android</code> a partir da pasta <code>www/</code>.</li>
       <li>Gera um token em <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens</a> com scopes <code>repo</code> + <code>workflow</code>.</li>
-      <li>Preenche os campos acima e clica "Iniciar build".</li>
+      <li>No teu backend Express (Render), monta a rota: <code>app.use('/api/apk-build', require('./apk-build-routes'))</code> — ficheiro fornecido separadamente.</li>
+      <li>Preenche os campos acima, incluindo o URL do backend (ex: <code>https://o-teu-backend.onrender.com/api/apk-build</code>), e clica "Iniciar build".</li>
     </ol>
-    <p><strong>Porque é que isto corrige o problema do "abre como site":</strong> esta versão nunca pede ao workflow para criar um atalho — ela própria lê o conteúdo (URL, HTML ou ZIP) aqui no browser e envia os ficheiros reais para <code>www/</code> no repositório, sempre identificados como <code>source_mode=file</code> perante o workflow. O que sai no APK é sempre o conteúdo de verdade.</p>
+    <p><strong>Porque é que isto corrige as falhas de "Failed to fetch":</strong> antes, o telemóvel fazia dezenas de pedidos seguidos diretamente à API do GitHub — sobre uma ligação móvel fraca isso falha facilmente a meio. Agora o telemóvel faz só 1 pedido a enviar tudo para o teu servidor, e o servidor (com ligação estável) é que fala com o GitHub. O telemóvel só faz pedidos leves de status a cada 3s.</p>
     <p><strong>Nota sobre assinatura:</strong> se o workflow gerar uma keystore nova a cada build, isso chega para testar/instalar, mas para publicar atualizações da mesma app sem forçar desinstalação, precisas de uma keystore fixa como <em>secret</em> do repositório.</p>
   </details>
 
@@ -391,51 +396,10 @@ function resizeImageToSquarePng(file, maxSize){
   });
 }
 
-async function ghApi(path, opts, token, retries){
-  if(retries === undefined) retries = 4;
-  let url;
-  try{
-    url = new URL('https://api.github.com'+path).href;
-  }catch(e){
-    throw new Error('URL inválido gerado a partir do campo "Repositório" — provavelmente tem um caráter estranho (ex: travessão em vez de hífen, ou espaço). Path tentado: '+path);
-  }
-  let lastErr;
-  for(let attempt = 1; attempt <= retries; attempt++){
-    try{
-      return await fetch(url, {
-        ...opts,
-        cache: 'no-store',
-        headers:{
-          'Authorization': 'Bearer '+token,
-          'Accept':'application/vnd.github+json',
-          'Content-Type':'application/json',
-          'Cache-Control':'no-cache',
-          ...(opts && opts.headers ? opts.headers : {})
-        }
-      });
-    }catch(e){
-      lastErr = e;
-      if(attempt < retries){
-        log('  ⚠ ligação caiu a meio do pedido (tentativa '+attempt+'/'+retries+') — a repetir em '+attempt+'s...', 'log-warn');
-        await new Promise(r => setTimeout(r, attempt * 1000));
-      }
-    }
-  }
-  throw lastErr;
-}
-
-async function uploadFileToRepo(owner, repoName, token, path, base64content, commitMessage){
-  let sha = undefined;
-  const existing = await ghApi(`/repos/${owner}/${repoName}/contents/${path}`, {}, token);
-  if(existing.ok){
-    const j = await existing.json();
-    sha = j.sha;
-  }
-  return ghApi(`/repos/${owner}/${repoName}/contents/${path}`, {
-    method:'PUT',
-    body: JSON.stringify({ message: commitMessage, content: base64content, sha: sha })
-  }, token);
-}
+// Nota: a comunicação com a API do GitHub já não corre aqui no browser — passou
+// para o backend (ver apk-build-routes.js). O browser só fala com o teu próprio
+// servidor (1 pedido para iniciar + polling leve de estado), o que evita depender
+// da ligação do telemóvel para a longa sequência de chamadas ao GitHub.
 
 // ---------- Content collection per mode ----------
 // Every mode resolves to the same shape: [{ path: 'www/...', base64: '...' }, ...]
@@ -530,7 +494,7 @@ async function collectFromUrl(pageUrl, logFn){
   return out;
 }
 
-// ---------- Build flow ----------
+// ---------- Build flow (via backend proxy — evita fetch direto ao GitHub no telemóvel) ----------
 $('buildBtn').addEventListener('click', async ()=>{
   termBody.innerHTML = '';
   term.style.display = 'block';
@@ -540,6 +504,7 @@ $('buildBtn').addEventListener('click', async ()=>{
   const token = $('token').value.trim();
   const appName = $('appName').value.trim();
   const packageId = $('packageId').value.trim();
+  const backendUrl = $('backendUrl').value.trim().replace(/\/$/,'');
   const mode = document.querySelector('.mode-tab.active').dataset.mode;
   const sourceUrl = $('sourceUrl').value.trim();
 
@@ -547,37 +512,24 @@ $('buildBtn').addEventListener('click', async ()=>{
     log('✗ falta preencher: repositório, token, nome da app ou package ID.', 'log-err');
     return;
   }
+  if(!backendUrl){ log('✗ preenche o URL do backend (ver "Configuração inicial" em baixo).', 'log-err'); return; }
   if(mode==='url' && !sourceUrl){ log('✗ indica o URL do site.', 'log-err'); return; }
   if(mode==='file' && !selectedFile){ log('✗ escolhe um ficheiro HTML.', 'log-err'); return; }
   if(mode==='zip' && !selectedZip){ log('✗ escolhe um ficheiro .zip.', 'log-err'); return; }
 
   const repoClean = repo
-    .replace(/[\u2010-\u2015\u2212]/g, '-')   // travessões/hífenes especiais → hífen normal
-    .replace(/[\u2018\u2019\u201C\u201D]/g, '') // aspas inteligentes
-    .replace(/\s+/g, '')                        // qualquer espaço, incluindo invisível
+    .replace(/[\u2010-\u2015\u2212]/g, '-')
+    .replace(/[\u2018\u2019\u201C\u201D]/g, '')
+    .replace(/\s+/g, '')
     .trim();
   if(repoClean !== repo){
-    log('⚠ o campo "Repositório" continha caracteres estranhos (travessão/espaço em vez de hífen normal) — corrigido automaticamente de "'+repo+'" para "'+repoClean+'".', 'log-warn');
+    log('⚠ o campo "Repositório" continha caracteres estranhos — corrigido automaticamente para "'+repoClean+'".', 'log-warn');
   }
-  const [ownerRaw, repoNameRaw] = repoClean.split('/');
-  if(!ownerRaw || !repoNameRaw){ log('✗ formato do repositório inválido — tem de ser owner/repo.', 'log-err'); return; }
-  const owner = encodeURIComponent(ownerRaw);
-  const repoName = encodeURIComponent(repoNameRaw);
-  log('$ repositório interpretado como: '+ownerRaw+'/'+repoNameRaw, 'log-dim');
 
   $('buildBtn').disabled = true;
   $('result').style.display = 'none';
 
   try{
-    log('$ a verificar acesso ao repositório...', 'log-dim');
-    const check = await ghApi(`/repos/${owner}/${repoName}`, {}, token);
-    if(!check.ok){
-      log('✗ não consegui aceder a '+repo+' — verifica o token e o nome do repositório.', 'log-err');
-      $('buildBtn').disabled = false;
-      return;
-    }
-    log('✓ repositório encontrado.', 'log-ok');
-
     log('$ a preparar conteúdo (modo: '+mode+')...', 'log-dim');
     let files;
     if(mode==='file') files = await collectFromFile(selectedFile);
@@ -588,107 +540,45 @@ $('buildBtn').addEventListener('click', async ()=>{
     files.slice(0,20).forEach(f => log('   '+f.path, 'log-dim'));
     if(files.length > 20) log('   … e mais '+(files.length-20)+' ficheiro(s)', 'log-dim');
 
-    log('$ a enviar ficheiros para www/...', 'log-dim');
-    for(const f of files){
-      const put = await uploadFileToRepo(owner, repoName, token, f.path, f.base64, 'build: atualizar '+f.path+' via apk-builder');
-      if(!put.ok){
-        const err = await put.json().catch(()=>({}));
-        log('✗ falha ao enviar '+f.path+': '+(err.message||put.status), 'log-err');
-        $('buildBtn').disabled = false;
-        return;
-      }
-      log('  ✓ '+f.path, 'log-dim');
-    }
-    log('✓ todos os ficheiros enviados.', 'log-ok');
-
+    let iconBase64 = null;
     if(selectedIcon){
       log('$ a processar ícone...', 'log-dim');
-      const iconB64 = await resizeImageToSquarePng(selectedIcon, 1024);
-      const iconPut = await uploadFileToRepo(owner, repoName, token, 'resources/icon.png', iconB64, 'build: atualizar ícone via apk-builder');
-      if(!iconPut.ok){
-        const err = await iconPut.json().catch(()=>({message:'resposta inválida do GitHub'}));
-        log('✗ falha ao enviar ícone: '+(err.message||iconPut.status), 'log-err');
-        $('buildBtn').disabled = false;
-        return;
-      }
-      log('✓ ícone enviado.', 'log-ok');
+      iconBase64 = await resizeImageToSquarePng(selectedIcon, 1024);
+      log('✓ ícone processado.', 'log-ok');
     }
 
-    // IMPORTANT: always dispatch as source_mode "file" — the real content is already
-    // materialized under www/, so the workflow must never fall back to generating
-    // a redirect-only page for us.
-    log('$ a disparar workflow build-apk.yml...', 'log-dim');
-    const dispatch = await ghApi(`/repos/${owner}/${repoName}/actions/workflows/build-apk.yml/dispatches`, {
+    log('$ a enviar tudo para o backend (1 único pedido)...', 'log-dim');
+    const startRes = await fetchWithRetry(backendUrl+'/start', {
       method:'POST',
-      body: JSON.stringify({
-        ref: 'main',
-        inputs:{
-          app_name: appName,
-          package_id: packageId,
-          source_mode: 'file',
-          source_url: ''
-        }
-      })
-    }, token);
-
-    if(dispatch.status !== 204){
-      const err = await dispatch.json().catch(()=>({}));
-      log('✗ não consegui disparar o workflow: '+(err.message||dispatch.status), 'log-err');
-      log('  confirma que .github/workflows/build-apk.yml existe no branch "main".', 'log-warn');
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ repo: repoClean, token, appName, packageId, files, iconBase64 })
+    });
+    if(!startRes.ok){
+      const err = await startRes.json().catch(()=>({}));
+      log('✗ backend recusou o pedido: '+(err.error||startRes.status), 'log-err');
       $('buildBtn').disabled = false;
       return;
     }
-    log('✓ workflow disparado.', 'log-ok');
-    log('$ à espera que o GitHub Actions comece a correr...', 'log-dim');
+    const { jobId } = await startRes.json();
+    log('✓ job iniciado no servidor (id: '+jobId+'). A acompanhar...', 'log-ok');
 
-    let runId = null, attempts = 0;
-    while(!runId && attempts < 15){
+    let shown = 0, done = false;
+    while(!done){
       await new Promise(r=>setTimeout(r, 3000));
-      attempts++;
-      const runsRes = await ghApi(`/repos/${owner}/${repoName}/actions/workflows/build-apk.yml/runs?per_page=1`, {}, token);
-      const runsJson = await runsRes.json();
-      if(runsJson.workflow_runs && runsJson.workflow_runs.length) runId = runsJson.workflow_runs[0].id;
-    }
-    if(!runId){
-      log('✗ não encontrei o run. Verifica manualmente no separador Actions do repositório.', 'log-err');
-      $('buildBtn').disabled = false;
-      return;
-    }
-    log('✓ run encontrado (#'+runId+'). A acompanhar progresso...', 'log-ok');
-
-    let status = 'queued';
-    while(status !== 'completed'){
-      await new Promise(r=>setTimeout(r, 6000));
-      const runRes = await ghApi(`/repos/${owner}/${repoName}/actions/runs/${runId}`, {}, token);
-      const runJson = await runRes.json();
-      status = runJson.status;
-      log('… estado: '+status, 'log-dim');
-      if(status === 'completed'){
-        if(runJson.conclusion === 'success'){
-          log('✓ build concluído com sucesso!', 'log-ok');
-        } else {
-          log('✗ build falhou (conclusão: '+runJson.conclusion+').', 'log-err');
-          log('  vê os logs completos em: '+runJson.html_url, 'log-warn');
-          $('buildBtn').disabled = false;
-          return;
-        }
+      const statusRes = await fetchWithRetry(backendUrl+'/'+jobId, {});
+      if(!statusRes.ok){ log('⚠ falha temporária a consultar o estado, a repetir...', 'log-warn'); continue; }
+      const data = await statusRes.json();
+      for(; shown < data.log.length; shown++){
+        const entry = data.log[shown];
+        log('  '+entry.msg, 'log-'+entry.level);
       }
-    }
-
-    log('$ a procurar a release com o APK...', 'log-dim');
-    const releasesRes = await ghApi(`/repos/${owner}/${repoName}/releases?per_page=1&_=${Date.now()}`, {}, token);
-    const releasesJson = await releasesRes.json();
-    if(releasesJson.length && releasesJson[0].assets && releasesJson[0].assets.length){
-      const apkAsset = releasesJson[0].assets.find(a=>a.name.endsWith('.apk'));
-      if(apkAsset){
-        log('✓ APK disponível: '+apkAsset.name, 'log-ok');
-        $('dlLink').href = apkAsset.browser_download_url;
+      if(data.status === 'done'){
+        done = true;
+        $('dlLink').href = data.downloadUrl;
         $('result').style.display = 'block';
-      } else {
-        log('⚠ release encontrada mas sem ficheiro .apk anexado.', 'log-warn');
+      } else if(data.status === 'error'){
+        done = true;
       }
-    } else {
-      log('⚠ não encontrei release. Confirma no separador Releases do repositório.', 'log-warn');
     }
 
   } catch(e){
