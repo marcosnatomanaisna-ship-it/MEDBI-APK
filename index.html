@@ -479,6 +479,7 @@ async function collectFromUrl(pageUrl, logFn){
     // keep the path relative to the page's own folder when possible
     const baseDir = base.pathname.replace(/[^/]*$/, '');
     if(abs.pathname.startsWith(baseDir)) rel = abs.pathname.slice(baseDir.length);
+    if(!rel || rel.endsWith('/')){ logFn('⚠ ignorado (aponta para uma pasta, não um ficheiro): '+abs.href, 'log-warn'); continue; }
     if(seen.has(rel)) continue;
     seen.add(rel);
     try{
