@@ -454,48 +454,10 @@ async function fetchWithRetry(url, opts, retries){
   throw lastErr;
 }
 
-async function collectFromUrl(pageUrl, logFn){
-  const base = new URL(pageUrl);
-  logFn('$ a descarregar '+base.href+'...', 'log-dim');
-  const res = await fetchWithRetry(base.href, { mode:'cors' });
-  if(!res.ok) throw new Error('Não consegui descarregar a página (status '+res.status+'). O servidor pode estar a bloquear CORS — usa o modo ZIP.');
-  const html = await res.text();
-  logFn('✓ HTML principal descarregado ('+html.length+' bytes).', 'log-ok');
-
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const refs = [];
-  doc.querySelectorAll('script[src]').forEach(el => refs.push(el.getAttribute('src')));
-  doc.querySelectorAll('link[href]').forEach(el => refs.push(el.getAttribute('href')));
-  doc.querySelectorAll('img[src]').forEach(el => refs.push(el.getAttribute('src')));
-  doc.querySelectorAll('source[src]').forEach(el => refs.push(el.getAttribute('src')));
-
-  const out = [{ path: 'www/index.html', base64: b64EncodeUnicode(html) }];
-  const seen = new Set(['index.html']);
-
-  for(const ref of refs){
-    if(!ref || ref.startsWith('data:')) continue;
-    let abs;
-    try{ abs = new URL(ref, base.href); } catch(e){ continue; }
-    if(abs.origin !== base.origin) { logFn('⚠ ignorado (origem diferente, provável CORS): '+abs.href, 'log-warn'); continue; }
-    let rel = abs.pathname.replace(/^\//,'');
-    // keep the path relative to the page's own folder when possible
-    const baseDir = base.pathname.replace(/[^/]*$/, '');
-    if(abs.pathname.startsWith(baseDir)) rel = abs.pathname.slice(baseDir.length);
-    if(!rel || rel.endsWith('/')){ logFn('⚠ ignorado (aponta para uma pasta, não um ficheiro): '+abs.href, 'log-warn'); continue; }
-    if(seen.has(rel)) continue;
-    seen.add(rel);
-    try{
-      const r = await fetchWithRetry(abs.href, { mode:'cors' });
-      if(!r.ok){ logFn('⚠ falhou ('+r.status+'): '+abs.href, 'log-warn'); continue; }
-      const buf = await r.arrayBuffer();
-      out.push({ path: 'www/' + rel, base64: arrayBufferToBase64(buf) });
-      logFn('✓ recurso obtido: '+rel, 'log-ok');
-    } catch(e){
-      logFn('⚠ bloqueado por CORS ou rede: '+abs.href+' — '+e.message, 'log-warn');
-    }
-  }
-  return out;
-}
+// Nota: o modo URL deixou de descarregar/embutir a página. A app final aponta
+// o WebView diretamente para este URL (via capacitor.config.json → server.url,
+// gerado no backend/workflow), tal como o AppMint. Por isso não há aqui nenhuma
+// função collectFromUrl — não há ficheiros a preparar neste modo, só o URL em si.
 
 // ---------- Build flow (via backend proxy — evita fetch direto ao GitHub no telemóvel) ----------
 $('buildBtn').addEventListener('click', async ()=>{
@@ -534,14 +496,20 @@ $('buildBtn').addEventListener('click', async ()=>{
 
   try{
     log('$ a preparar conteúdo (modo: '+mode+')...', 'log-dim');
-    let files;
-    if(mode==='file') files = await collectFromFile(selectedFile);
-    else if(mode==='zip') files = await collectFromZip(selectedZip);
-    else files = await collectFromUrl(sourceUrl, log);
+    let files = [];
+    if(mode==='file'){
+      files = await collectFromFile(selectedFile);
+    } else if(mode==='zip'){
+      files = await collectFromZip(selectedZip);
+    } else {
+      log('✓ modo URL — a app vai apontar diretamente para '+sourceUrl+' (nada é descarregado nem embutido aqui).', 'log-ok');
+    }
 
-    log('✓ '+files.length+' ficheiro(s) prontos para enviar:', 'log-ok');
-    files.slice(0,20).forEach(f => log('   '+f.path, 'log-dim'));
-    if(files.length > 20) log('   … e mais '+(files.length-20)+' ficheiro(s)', 'log-dim');
+    if(files.length){
+      log('✓ '+files.length+' ficheiro(s) prontos para enviar:', 'log-ok');
+      files.slice(0,20).forEach(f => log('   '+f.path, 'log-dim'));
+      if(files.length > 20) log('   … e mais '+(files.length-20)+' ficheiro(s)', 'log-dim');
+    }
 
     let iconBase64 = null;
     if(selectedIcon){
@@ -554,7 +522,12 @@ $('buildBtn').addEventListener('click', async ()=>{
     const startRes = await fetchWithRetry(backendUrl+'/start', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ repo: repoClean, token, appName, packageId, files, iconBase64 })
+      body: JSON.stringify({
+        repo: repoClean, token, appName, packageId,
+        mode, // 'url' | 'file' | 'zip' — decide como o backend gera o capacitor.config.json
+        liveUrl: mode==='url' ? sourceUrl : undefined,
+        files, iconBase64
+      })
     });
     if(!startRes.ok){
       const err = await startRes.json().catch(()=>({}));
