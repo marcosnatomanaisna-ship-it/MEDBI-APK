@@ -391,19 +391,37 @@ function resizeImageToSquarePng(file, maxSize){
   });
 }
 
-async function ghApi(path, opts, token){
-  const res = await fetch('https://api.github.com'+path, {
-    ...opts,
-    cache: 'no-store',
-    headers:{
-      'Authorization': 'Bearer '+token,
-      'Accept':'application/vnd.github+json',
-      'Content-Type':'application/json',
-      'Cache-Control':'no-cache',
-      ...(opts && opts.headers ? opts.headers : {})
+async function ghApi(path, opts, token, retries){
+  if(retries === undefined) retries = 4;
+  let url;
+  try{
+    url = new URL('https://api.github.com'+path).href;
+  }catch(e){
+    throw new Error('URL inválido gerado a partir do campo "Repositório" — provavelmente tem um caráter estranho (ex: travessão em vez de hífen, ou espaço). Path tentado: '+path);
+  }
+  let lastErr;
+  for(let attempt = 1; attempt <= retries; attempt++){
+    try{
+      return await fetch(url, {
+        ...opts,
+        cache: 'no-store',
+        headers:{
+          'Authorization': 'Bearer '+token,
+          'Accept':'application/vnd.github+json',
+          'Content-Type':'application/json',
+          'Cache-Control':'no-cache',
+          ...(opts && opts.headers ? opts.headers : {})
+        }
+      });
+    }catch(e){
+      lastErr = e;
+      if(attempt < retries){
+        log('  ⚠ ligação caiu a meio do pedido (tentativa '+attempt+'/'+retries+') — a repetir em '+attempt+'s...', 'log-warn');
+        await new Promise(r => setTimeout(r, attempt * 1000));
+      }
     }
-  });
-  return res;
+  }
+  throw lastErr;
 }
 
 async function uploadFileToRepo(owner, repoName, token, path, base64content, commitMessage){
@@ -457,10 +475,23 @@ async function collectFromZip(zipFile){
   return out;
 }
 
+async function fetchWithRetry(url, opts, retries){
+  if(retries === undefined) retries = 4;
+  let lastErr;
+  for(let attempt = 1; attempt <= retries; attempt++){
+    try{ return await fetch(url, opts); }
+    catch(e){
+      lastErr = e;
+      if(attempt < retries) await new Promise(r => setTimeout(r, attempt * 1000));
+    }
+  }
+  throw lastErr;
+}
+
 async function collectFromUrl(pageUrl, logFn){
   const base = new URL(pageUrl);
   logFn('$ a descarregar '+base.href+'...', 'log-dim');
-  const res = await fetch(base.href, { mode:'cors' });
+  const res = await fetchWithRetry(base.href, { mode:'cors' });
   if(!res.ok) throw new Error('Não consegui descarregar a página (status '+res.status+'). O servidor pode estar a bloquear CORS — usa o modo ZIP.');
   const html = await res.text();
   logFn('✓ HTML principal descarregado ('+html.length+' bytes).', 'log-ok');
@@ -487,7 +518,7 @@ async function collectFromUrl(pageUrl, logFn){
     if(seen.has(rel)) continue;
     seen.add(rel);
     try{
-      const r = await fetch(abs.href, { mode:'cors' });
+      const r = await fetchWithRetry(abs.href, { mode:'cors' });
       if(!r.ok){ logFn('⚠ falhou ('+r.status+'): '+abs.href, 'log-warn'); continue; }
       const buf = await r.arrayBuffer();
       out.push({ path: 'www/' + rel, base64: arrayBufferToBase64(buf) });
@@ -520,8 +551,19 @@ $('buildBtn').addEventListener('click', async ()=>{
   if(mode==='file' && !selectedFile){ log('✗ escolhe um ficheiro HTML.', 'log-err'); return; }
   if(mode==='zip' && !selectedZip){ log('✗ escolhe um ficheiro .zip.', 'log-err'); return; }
 
-  const [owner, repoName] = repo.split('/');
-  if(!owner || !repoName){ log('✗ formato do repositório inválido — tem de ser owner/repo.', 'log-err'); return; }
+  const repoClean = repo
+    .replace(/[\u2010-\u2015\u2212]/g, '-')   // travessões/hífenes especiais → hífen normal
+    .replace(/[\u2018\u2019\u201C\u201D]/g, '') // aspas inteligentes
+    .replace(/\s+/g, '')                        // qualquer espaço, incluindo invisível
+    .trim();
+  if(repoClean !== repo){
+    log('⚠ o campo "Repositório" continha caracteres estranhos (travessão/espaço em vez de hífen normal) — corrigido automaticamente de "'+repo+'" para "'+repoClean+'".', 'log-warn');
+  }
+  const [ownerRaw, repoNameRaw] = repoClean.split('/');
+  if(!ownerRaw || !repoNameRaw){ log('✗ formato do repositório inválido — tem de ser owner/repo.', 'log-err'); return; }
+  const owner = encodeURIComponent(ownerRaw);
+  const repoName = encodeURIComponent(repoNameRaw);
+  log('$ repositório interpretado como: '+ownerRaw+'/'+repoNameRaw, 'log-dim');
 
   $('buildBtn').disabled = true;
   $('result').style.display = 'none';
