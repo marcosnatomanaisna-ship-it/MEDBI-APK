@@ -234,6 +234,30 @@
   }
   .back-btn:hover{border-color:var(--dim-2); color:var(--text); background:var(--panel-2);}
 
+  /* ---------- app actions (checkboxes) ---------- */
+  .app-actions-label{
+    font-family:var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.1em;
+    color:var(--dim); margin:18px 0 10px; font-weight:600;
+  }
+  .check-row{
+    display:flex; align-items:center; gap:11px; padding:12px 13px; border-radius:8px;
+    border:1px solid var(--line); background:var(--panel-2); cursor:pointer;
+    margin-bottom:9px; transition:border-color .15s ease, background .15s ease; user-select:none;
+  }
+  .check-row:hover{border-color:var(--dim-2);}
+  .check-row input[type=checkbox]{display:none;}
+  .check-box{
+    flex:none; width:19px; height:19px; border-radius:5px; border:1.5px solid var(--dim-2);
+    background:var(--panel); display:flex; align-items:center; justify-content:center;
+    transition:all .15s ease;
+  }
+  .check-box svg{width:12px; height:12px; opacity:0; transform:scale(.6); transition:all .15s ease; color:#04140B;}
+  .check-row input:checked + .check-box{background:var(--accent); border-color:var(--accent);}
+  .check-row input:checked + .check-box svg{opacity:1; transform:scale(1);}
+  .check-row.checked{border-color:var(--accent-dim); background:var(--accent-soft);}
+  .check-text{font-family:var(--sans); font-size:13.5px; color:var(--text);}
+  .check-sub{font-size:11.5px; color:var(--dim-2); margin-top:1px;}
+
   code{background:var(--panel-2); padding:2px 5px; border-radius:3px; font-family:var(--mono); font-size:12px; border:1px solid var(--line);}
   a{color:var(--accent);}
 
@@ -405,6 +429,18 @@
       <input type="file" id="iconInput" accept="image/png,image/jpeg">
     </div>
     <button type="button" class="icon-remove-btn" id="iconRemoveBtn">🗑 Remover ícone</button>
+
+    <div class="app-actions-label">Ações da app</div>
+    <label class="check-row" id="exitAppRow">
+      <input type="checkbox" id="exitAppCheckbox">
+      <span class="check-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
+      <span>
+        <div class="check-text">Botão de sair da app</div>
+        <div class="check-sub">adiciona um botão "Sair" que fecha a app (Capacitor App.exitApp)</div>
+      </span>
+    </label>
 
     <div id="sourceSummary" style="margin-top:14px; padding:11px 13px; border:1px solid var(--accent-dim); border-radius:7px; background:var(--accent-soft); font-family:var(--mono); font-size:12.5px; color:var(--accent);">
       ⚠ nenhuma origem selecionada ainda
@@ -582,6 +618,11 @@ $('iconRemoveBtn').addEventListener('click', ()=>{
   $('iconDropZone').classList.remove('has-file');
   iconDropZoneLabel.textContent = iconDropZoneDefaultLabel;
   $('iconPreviewImg').src = '';
+});
+
+// ---------- Exit App Button ----------
+$('exitAppCheckbox').addEventListener('change', ()=>{
+  $('exitAppRow').classList.toggle('checked', $('exitAppCheckbox').checked);
 });
 
 // ---------- Helpers ----------
@@ -777,6 +818,7 @@ async function performBuild(){
         mode, // 'url' | 'file' | 'zip' — decide como o backend gera o capacitor.config.json
         outputFormat: format, // 'apk' | 'aab' — decide se o backend corre assembleRelease ou bundleRelease
         liveUrl: mode==='url' ? sourceUrl : undefined,
+        exitAppButton: $('exitAppCheckbox').checked, // true → backend injeta botão "Sair" (Capacitor App.exitApp)
         files, iconBase64
       })
     });
@@ -813,6 +855,7 @@ async function performBuild(){
         addHistoryEntry({
           id: jobId + '-' + Date.now(),
           name: appName, packageId, mode, format,
+          exitAppButton: $('exitAppCheckbox').checked,
           source: mode==='url' ? sourceUrl : (mode==='file' ? (selectedFile && selectedFile.name) : (selectedZip && selectedZip.name)),
           downloadUrl: data.downloadUrl,
           date: new Date().toISOString()
@@ -939,6 +982,8 @@ function reconfigureFrom(entry){
   });
   outputFormat = wantFormat;
   if(entry.mode === 'url') $('sourceUrl').value = entry.source || '';
+  $('exitAppCheckbox').checked = !!entry.exitAppButton;
+  $('exitAppRow').classList.toggle('checked', !!entry.exitAppButton);
   updateSourceSummary();
   closeDrawer();
   window.scrollTo({top:0, behavior:'smooth'});
