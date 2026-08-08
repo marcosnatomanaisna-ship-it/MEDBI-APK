@@ -21,10 +21,6 @@ on:
         description: 'apk ou aab'
         required: true
         default: 'apk'
-      exit_app_button:
-        description: 'adicionar botão nativo "Sair" (true/false)'
-        required: false
-        default: 'false'
 
 permissions:
   contents: write
@@ -120,22 +116,18 @@ jobs:
       - name: Configurar botão "Voltar" e saída da app
         # Substitui o MainActivity.java gerado pelo "cap add android" (que por
         # omissão só tem "public class MainActivity extends BridgeActivity {}"),
-        # por uma versão com dois comportamentos SEMPRE ativos:
-        #
-        # 1) Botão/gesto "Voltar" do Android: se a WebView tiver histórico
-        #    (ex: navegou de uma página para outra dentro da app), volta um
-        #    passo atrás nesse histórico em vez de fechar a app de imediato.
-        #    Só quando já não há mais histórico (ecrã inicial) é que pergunta
-        #    "Queres sair da aplicação?" antes de fechar.
-        # 2) Botão flutuante "Sair" (opcional, controlado por exit_app_button):
-        #    atalho visível que dispara a mesma confirmação de saída.
+        # por uma versão que trata o botão/gesto "Voltar" do Android:
+        # se a WebView tiver histórico (ex: navegou de uma página para outra
+        # dentro da app), volta um passo atrás nesse histórico em vez de
+        # fechar a app de imediato. Só quando já não há mais histórico
+        # (ecrã inicial) é que pergunta "Queres sair da aplicação?" antes
+        # de fechar. Sem botão flutuante — nada sobreposto ao conteúdo.
         #
         # Nativo (não JS/CSS injetado na página) — funciona da mesma forma em
         # modo "file"/"zip" (HTML embutido) e em modo "url" (WebView aponta
         # para um site externo, onde não há como controlar o HTML da página).
         env:
           PACKAGE_ID: ${{ github.event.inputs.package_id }}
-          EXIT_APP_BUTTON: ${{ github.event.inputs.exit_app_button }}
         run: |
           PKG_PATH=$(echo "$PACKAGE_ID" | tr '.' '/')
           MAIN_ACTIVITY="android/app/src/main/java/$PKG_PATH/MainActivity.java"
@@ -145,45 +137,15 @@ jobs:
           fi
           echo "a editar: $MAIN_ACTIVITY"
 
-          if [ "$EXIT_APP_BUTTON" = "true" ]; then
-            EXIT_BUTTON_BLOCK='
-                  Button exitButton = new Button(this);
-                  exitButton.setText("Sair");
-                  exitButton.setTextColor(Color.WHITE);
-                  exitButton.setBackgroundColor(Color.parseColor("#CC1F6B44"));
-                  exitButton.setOnClickListener(v -> confirmExit());
-
-                  FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                      FrameLayout.LayoutParams.WRAP_CONTENT,
-                      FrameLayout.LayoutParams.WRAP_CONTENT
-                  );
-                  params.gravity = Gravity.BOTTOM | Gravity.END;
-                  params.setMargins(0, 0, 32, 32);
-
-                  addContentView(exitButton, params);'
-          else
-            EXIT_BUTTON_BLOCK=''
-          fi
-
           cat > "$MAIN_ACTIVITY" <<EOF
           package $PACKAGE_ID;
 
           import android.app.AlertDialog;
-          import android.graphics.Color;
           import android.os.Bundle;
-          import android.view.Gravity;
           import android.webkit.WebView;
-          import android.widget.Button;
-          import android.widget.FrameLayout;
           import com.getcapacitor.BridgeActivity;
 
           public class MainActivity extends BridgeActivity {
-              @Override
-              public void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-          $EXIT_BUTTON_BLOCK
-              }
-
               @Override
               public void onBackPressed() {
                   WebView webView = this.bridge.getWebView();
@@ -315,7 +277,6 @@ jobs:
             ${{ github.event.inputs.output_format == 'aab' && 'AAB (Android App Bundle)' || 'APK' }} gerado automaticamente.
             Modo: `${{ github.event.inputs.source_mode }}`${{ github.event.inputs.source_mode == 'url' && format(' — WebView aponta para {0} (app vai buscar sempre a versão mais recente, sem precisar de rebuild)', github.event.inputs.source_url) || ' — conteúdo embutido offline no APK' }}
             Package: `${{ github.event.inputs.package_id }}`
-            Botão de sair: ${{ github.event.inputs.exit_app_button == 'true' && 'sim (nativo, canto inferior direito)' || 'não' }}
           files: ${{ steps.outname.outputs.out_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
