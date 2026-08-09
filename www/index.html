@@ -879,6 +879,9 @@
     document.documentElement.style.overflow = 'hidden';
     const overlay = document.createElement('div');
     overlay.id = 'medbi-activation-gate';
+    // Marca se este ecrã só precisa de internet (sem código) — usado para
+    // saber se pode tentar desbloquear sozinho assim que a rede voltar.
+    overlay.dataset.networkOnly = showCodeInput ? 'false' : 'true';
     overlay.style.cssText =
       'position:fixed;inset:0;z-index:999999;background:#0b1220;color:#fff;' +
       'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
@@ -1176,7 +1179,42 @@
   // horas offline só reportava atividade na próxima interação manual —
   // o que fazia clientes ativos (mas com internet instável) parecerem
   // inativos no painel por mais tempo do que realmente estavam.
-  window.addEventListener('online', () => revalidateIfNeeded(true));
+  // Se o ecrã de bloqueio visível é o de "só precisa de internet" (sem
+  // código — o dos 7 dias sem contacto), tenta reconfirmar sozinho assim
+  // que a rede voltar, sem esperar o utilizador reabrir o app. O gate de
+  // "licença inválida" (com código) nunca é tocado aqui — esse só sai
+  // digitando um código novo.
+  async function retryNetworkOnlyGate() {
+    const gate = document.getElementById('medbi-activation-gate');
+    if (!gate || gate.dataset.networkOnly !== 'true') return;
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch (e) {}
+    if (!stored || !stored.license) return;
+    const deviceId = await getDeviceId();
+    try {
+      const data = await validateLicense(deviceId, stored.license, 8000);
+      if (data && data.valid) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          license: stored.license,
+          lastValidated: Date.now(),
+          expiresAt: (typeof data.expiresAt !== 'undefined') ? data.expiresAt : stored.expiresAt
+        }));
+        const g = document.getElementById('medbi-activation-gate');
+        if (g) hideGate(g);
+        if (data.warning && data.message) showExpiryBanner(data.message);
+      }
+      // Se vier valid:false aqui, ignora por agora — o próximo boot()
+      // normal (app reaberto) é que decide mostrar o gate de código.
+    } catch (e) {
+      // Ainda sem sucesso: mantém o mesmo ecrã, tenta de novo na próxima
+      // vez que a rede voltar.
+    }
+  }
+
+  window.addEventListener('online', () => {
+    retryNetworkOnlyGate();
+    revalidateIfNeeded(true);
+  });
 
   try {
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
