@@ -21,6 +21,10 @@ on:
         description: 'apk ou aab'
         required: true
         default: 'apk'
+      splash_color:
+        description: 'Cor de fundo do splash screen (hex, ex: #FDE2DD)'
+        required: false
+        default: '#FDE2DD'
 
 permissions:
   contents: write
@@ -173,13 +177,28 @@ jobs:
           echo "--- MainActivity.java final ---"
           cat "$MAIN_ACTIVITY"
 
-      - name: Gerar ícone da app
+      - name: Gerar ícone e splash screen da app
         run: |
-          if [ -f resources/icon.png ]; then
-            echo "Ícone personalizado encontrado — a gerar todos os tamanhos..."
-            npx @capacitor/assets generate --android --iconBackgroundColor '#FFFFFF' --iconBackgroundColorDark '#000000'
+          RAW_COLOR="${{ github.event.inputs.splash_color }}"
+          if [[ "$RAW_COLOR" =~ ^#[0-9A-Fa-f]{6}$ ]]; then
+            SPLASH_COLOR="$RAW_COLOR"
           else
-            echo "Sem ícone personalizado — a usar o ícone padrão do Capacitor."
+            echo "⚠ cor de splash inválida ou vazia ('$RAW_COLOR') — a usar default #FDE2DD."
+            SPLASH_COLOR="#FDE2DD"
+          fi
+          echo "Cor de fundo do splash: $SPLASH_COLOR"
+
+          if [ -f resources/icon.png ]; then
+            echo "Ícone personalizado encontrado — a gerar todos os tamanhos (ícone + splash)..."
+            npx @capacitor/assets generate --android \
+              --iconBackgroundColor '#FFFFFF' --iconBackgroundColorDark '#000000' \
+              --splashBackgroundColor "$SPLASH_COLOR" --splashBackgroundColorDark "$SPLASH_COLOR"
+          else
+            echo "Sem ícone personalizado — a usar o ícone padrão do Capacitor, mas a aplicar a cor de splash escolhida."
+            mkdir -p resources
+            # gera um splash mínimo 1x1 na cor escolhida para o @capacitor/assets ter uma fonte a partir da qual trabalhar
+            npx @capacitor/assets generate --android \
+              --splashBackgroundColor "$SPLASH_COLOR" --splashBackgroundColorDark "$SPLASH_COLOR"
           fi
 
       - name: Sincronizar
