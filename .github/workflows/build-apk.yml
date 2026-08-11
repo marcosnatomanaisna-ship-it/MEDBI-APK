@@ -187,6 +187,7 @@ jobs:
             SPLASH_COLOR="#FDE2DD"
           fi
           echo "Cor de fundo do splash: $SPLASH_COLOR"
+          echo "SPLASH_COLOR=$SPLASH_COLOR" >> "$GITHUB_ENV"
 
           if [ -f resources/icon.png ]; then
             echo "Ícone personalizado encontrado — a gerar todos os tamanhos (ícone + splash)..."
@@ -203,6 +204,32 @@ jobs:
 
       - name: Sincronizar
         run: npx cap sync android
+
+      - name: Forçar cor do splash no Android 12+ (API 31)
+        # O @capacitor/assets atualiza os recursos "clássicos" (values/colors.xml,
+        # drawable), mas a partir do Android 12 o sistema usa a Splash Screen API
+        # nativa, que lê a cor de values-v31/styles.xml (windowSplashScreenBackground).
+        # Se essa versão do tema não estiver alinhada, o telemóvel ignora a cor
+        # escolhida e mostra a cor por defeito. Este passo força-a diretamente.
+        run: |
+          STYLES="android/app/src/main/res/values/styles.xml"
+          echo "--- styles.xml antes da alteração ---"
+          cat "$STYLES" || echo "(styles.xml não encontrado em $STYLES)"
+
+          mkdir -p android/app/src/main/res/values-v31
+          cat > android/app/src/main/res/values-v31/styles.xml <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+                  <item name="windowSplashScreenBackground">${SPLASH_COLOR}</item>
+                  <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+                  <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+              </style>
+          </resources>
+          EOF
+
+          echo "--- values-v31/styles.xml gerado ---"
+          cat android/app/src/main/res/values-v31/styles.xml
 
       - name: Corrigir conflito de versões do Kotlin
         run: |
