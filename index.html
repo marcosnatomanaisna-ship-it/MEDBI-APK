@@ -344,14 +344,21 @@
     <div class="pnode" id="pill-2"><div class="ring">2</div><div class="label">Build</div></div>
   </div>
 
-  <!-- GitHub connection (oculto — valores fixos, só usados internamente pelo build; já não conta como passo numerado) -->
-  <div class="panel" id="githubPanel" style="display:none;">
-    <h2><span class="n">01</span> Ligação ao GitHub</h2>
+  <!-- GitHub connection: repo/URL do backend são fixos, mas a chave de acesso é
+       um campo real que o utilizador tem de preencher — por isso o painel já
+       não pode ficar oculto como antes. -->
+  <div class="panel" id="githubPanel">
+    <h2><span class="n">🔑</span> Ligação ao backend</h2>
     <label>Repositório (owner/nome) <span class="fixed-tag">fixo</span></label>
     <input type="text" id="repo" value="marcosnatomanaisna-ship-it/MEDBI-APK" readonly>
     <label>URL do backend <span class="fixed-tag">fixo</span></label>
     <input type="text" id="backendUrl" value="https://medbi-license-server.onrender.com/api/apk-build" readonly>
-    <div class="hint">🔒 token do GitHub gerido pelo servidor (variável de ambiente <code>GITHUB_TOKEN</code>) — nada a escrever aqui.</div>
+    <label>Chave de acesso ao backend</label>
+    <div class="row">
+      <div><input type="password" id="apiKey" placeholder="cola aqui a APK_BUILDER_API_KEY definida no Render" autocomplete="off"></div>
+      <div style="flex:0 0 44px;"><button type="button" id="apiKeyToggle" style="width:100%; height:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; color:var(--dim); cursor:pointer; font-family:var(--mono); font-size:13px;">👁</button></div>
+    </div>
+    <div class="hint">🔒 token do GitHub gerido pelo servidor (variável de ambiente <code>GITHUB_TOKEN</code>) — nada a escrever aqui. A chave acima é diferente: sem ela o backend recusa o pedido. Fica guardada só neste telemóvel — não precisas de a escrever de novo.</div>
   </div>
 
   <!-- STEP 1: App config -->
@@ -471,6 +478,23 @@ const $ = (id) => document.getElementById(id);
 const termBody = $('termBody');
 const term = $('term');
 
+// ---------- Chave de acesso ao backend (guardada só neste telemóvel) ----------
+const API_KEY_STORAGE_KEY = 'apkbuild_apikey_v1';
+(function initApiKey(){
+  try {
+    const saved = localStorage.getItem(API_KEY_STORAGE_KEY);
+    if (saved) $('apiKey').value = saved;
+  } catch(e){ /* localStorage indisponível — o utilizador só tem de escrever a chave outra vez */ }
+})();
+$('apiKey').addEventListener('input', (e)=>{
+  try { localStorage.setItem(API_KEY_STORAGE_KEY, e.target.value.trim()); } catch(e){}
+});
+$('apiKeyToggle').addEventListener('click', ()=>{
+  const isHidden = $('apiKey').type === 'password';
+  $('apiKey').type = isHidden ? 'text' : 'password';
+  $('apiKeyToggle').textContent = isHidden ? '🙈' : '👁';
+});
+
 function log(msg, cls){
   term.style.display = 'block';
   const line = document.createElement('div');
@@ -572,6 +596,11 @@ $('zipInput').addEventListener('change', (e)=>{
 });
 
 let selectedIcon = null;
+// true só quando o utilizador carrega explicitamente em "Remover ícone" —
+// distingue "nunca mexi no ícone" (mantém o que já está no repo) de
+// "quero mesmo voltar ao ícone padrão" (backend tem de apagar o ficheiro
+// antigo do repo, senão o próximo build continuava a usá-lo).
+let iconExplicitlyRemoved = false;
 const iconDropZoneDefaultLabel = 'clica para escolher o ícone (PNG/JPG)';
 const iconDropZoneLabel = document.createElement('span');
 iconDropZoneLabel.textContent = iconDropZoneDefaultLabel;
@@ -581,6 +610,7 @@ $('iconInput').addEventListener('change', (e)=>{
   const f = e.target.files[0];
   if(f){
     selectedIcon = f;
+    iconExplicitlyRemoved = false;
     $('iconDropZone').classList.add('has-file');
     iconDropZoneLabel.textContent = f.name;
     const url = URL.createObjectURL(f);
@@ -589,6 +619,7 @@ $('iconInput').addEventListener('change', (e)=>{
 });
 $('iconRemoveBtn').addEventListener('click', ()=>{
   selectedIcon = null;
+  iconExplicitlyRemoved = true;
   $('iconInput').value = '';
   $('iconDropZone').classList.remove('has-file');
   iconDropZoneLabel.textContent = iconDropZoneDefaultLabel;
@@ -751,6 +782,8 @@ async function performBuild(){
     return;
   }
   if(!backendUrl){ log('✗ preenche o URL do backend (ver "Configuração inicial" em baixo).', 'log-err'); return; }
+  const apiKey = $('apiKey').value.trim();
+  if(!apiKey){ log('✗ preenche a "Chave de acesso ao backend" (secção 🔑 Ligação ao backend, em cima).', 'log-err'); return; }
   if(mode==='url' && !sourceUrl){ log('✗ indica o URL do site.', 'log-err'); return; }
   if(mode==='file' && !selectedFile){ log('✗ escolhe um ficheiro HTML.', 'log-err'); return; }
   if(mode==='zip' && !selectedZip){ log('✗ escolhe um ficheiro .zip.', 'log-err'); return; }
@@ -795,19 +828,24 @@ async function performBuild(){
     log('$ a enviar tudo para o backend (1 único pedido, formato: '+format.toUpperCase()+')...', 'log-dim');
     const startRes = await fetchWithRetry(backendUrl+'/start', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json', 'x-api-key': apiKey},
       body: JSON.stringify({
         repo: repoClean, appName, packageId,
         mode, // 'url' | 'file' | 'zip' — decide como o backend gera o capacitor.config.json
         outputFormat: format, // 'apk' | 'aab' — decide se o backend corre assembleRelease ou bundleRelease
         liveUrl: mode==='url' ? sourceUrl : undefined,
         files, iconBase64,
+        removeIcon: iconExplicitlyRemoved && !iconBase64,
         splashColor: getSplashColor()
       })
     });
     if(!startRes.ok){
       const err = await startRes.json().catch(()=>({}));
-      log('✗ backend recusou o pedido: '+(err.error||startRes.status), 'log-err');
+      if(startRes.status === 401){
+        log('✗ chave de acesso inválida — confirma o campo "Chave de acesso ao backend" (secção 🔑, em cima).', 'log-err');
+      } else {
+        log('✗ backend recusou o pedido: '+(err.error||startRes.status), 'log-err');
+      }
       setPipeline(2, 'error');
       setBuildLoading(false);
       showRetry();
@@ -819,7 +857,7 @@ async function performBuild(){
     let shown = 0, done = false;
     while(!done){
       await new Promise(r=>setTimeout(r, 3000));
-      const statusRes = await fetchWithRetry(backendUrl+'/'+jobId, {});
+      const statusRes = await fetchWithRetry(backendUrl+'/'+jobId, {headers:{'x-api-key': apiKey}});
       if(!statusRes.ok){ log('⚠ falha temporária a consultar o estado, a repetir...', 'log-warn'); continue; }
       const data = await statusRes.json();
       for(; shown < data.log.length; shown++){
