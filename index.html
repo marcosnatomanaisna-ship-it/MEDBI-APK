@@ -406,6 +406,17 @@
     </div>
     <button type="button" class="icon-remove-btn" id="iconRemoveBtn">🗑 Remover ícone</button>
 
+    <label style="margin-top:8px;">Cor de fundo do splash <span class="fixed-tag">opcional</span></label>
+    <div class="row">
+      <div style="flex:0 0 54px;">
+        <input type="color" id="splashColor" value="#FDE2DD" style="width:100%; height:42px; padding:2px; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; cursor:pointer;">
+      </div>
+      <div>
+        <input type="text" id="splashColorHex" placeholder="#FDE2DD" value="#FDE2DD" maxlength="7">
+      </div>
+    </div>
+    <div class="hint">esta é a cor da tela que aparece por 1-2s quando a app arranca, antes de carregar.</div>
+
     <div id="sourceSummary" style="margin-top:14px; padding:11px 13px; border:1px solid var(--accent-dim); border-radius:7px; background:var(--accent-soft); font-family:var(--mono); font-size:12.5px; color:var(--accent);">
       ⚠ nenhuma origem selecionada ainda
     </div>
@@ -583,6 +594,19 @@ $('iconRemoveBtn').addEventListener('click', ()=>{
   iconDropZoneLabel.textContent = iconDropZoneDefaultLabel;
   $('iconPreviewImg').src = '';
 });
+
+// ---------- Cor de fundo do splash screen ----------
+$('splashColor').addEventListener('input', (e)=>{
+  $('splashColorHex').value = e.target.value.toUpperCase();
+});
+$('splashColorHex').addEventListener('input', (e)=>{
+  const v = e.target.value.trim();
+  if(/^#[0-9A-Fa-f]{6}$/.test(v)) $('splashColor').value = v;
+});
+function getSplashColor(){
+  const v = ($('splashColorHex').value || '').trim();
+  return /^#[0-9A-Fa-f]{6}$/.test(v) ? v.toUpperCase() : '#FDE2DD';
+}
 
 // ---------- Helpers ----------
 function b64EncodeUnicode(str) {
@@ -777,7 +801,8 @@ async function performBuild(){
         mode, // 'url' | 'file' | 'zip' — decide como o backend gera o capacitor.config.json
         outputFormat: format, // 'apk' | 'aab' — decide se o backend corre assembleRelease ou bundleRelease
         liveUrl: mode==='url' ? sourceUrl : undefined,
-        files, iconBase64
+        files, iconBase64,
+        splashColor: getSplashColor()
       })
     });
     if(!startRes.ok){
@@ -815,6 +840,7 @@ async function performBuild(){
           name: appName, packageId, mode, format,
           source: mode==='url' ? sourceUrl : (mode==='file' ? (selectedFile && selectedFile.name) : (selectedZip && selectedZip.name)),
           downloadUrl: data.downloadUrl,
+          splashColor: getSplashColor(),
           date: new Date().toISOString()
         });
       } else if(data.status === 'error'){
@@ -939,6 +965,9 @@ function reconfigureFrom(entry){
   });
   outputFormat = wantFormat;
   if(entry.mode === 'url') $('sourceUrl').value = entry.source || '';
+  const restoredSplash = /^#[0-9A-Fa-f]{6}$/.test(entry.splashColor || '') ? entry.splashColor : '#FDE2DD';
+  $('splashColor').value = restoredSplash;
+  $('splashColorHex').value = restoredSplash;
   updateSourceSummary();
   closeDrawer();
   window.scrollTo({top:0, behavior:'smooth'});
