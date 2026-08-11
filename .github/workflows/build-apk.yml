@@ -227,6 +227,14 @@ jobs:
           EOF
 
       - name: Gerar keystore de assinatura
+        env:
+          # Nunca interpolar ${{ github.event.inputs.* }} diretamente dentro
+          # de um bloco "run:" — o GitHub Actions substitui isso por texto
+          # ANTES do bash correr, por isso um app_name com aspas/backticks
+          # conseguiria injetar comandos no runner (que tem acesso à
+          # keystore). Passar por variável de ambiente evita isso: o valor
+          # chega ao bash já como uma string normal, nunca como código.
+          APP_NAME: ${{ github.event.inputs.app_name }}
         run: |
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
             echo "A usar keystore fixa (secret KEYSTORE_BASE64) — assinatura consistente entre builds."
@@ -241,7 +249,7 @@ jobs:
               -alias appkey \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass "android123" -keypass "android123" \
-              -dname "CN=${{ github.event.inputs.app_name }}, OU=Dev, O=Dev, L=Lisboa, S=Lisboa, C=PT"
+              -dname "CN=$APP_NAME, OU=Dev, O=Dev, L=Lisboa, S=Lisboa, C=PT"
             echo "STORE_PASS=android123" >> $GITHUB_ENV
             echo "KEY_ALIAS=appkey" >> $GITHUB_ENV
             echo "KEY_PASS=android123" >> $GITHUB_ENV
@@ -269,8 +277,10 @@ jobs:
 
       - name: Renomear ficheiro final para o nome da app
         id: outname
+        env:
+          APP_NAME: ${{ github.event.inputs.app_name }}
         run: |
-          SAFE_NAME=$(echo "${{ github.event.inputs.app_name }}" \
+          SAFE_NAME=$(echo "$APP_NAME" \
             | iconv -f utf8 -t ascii//TRANSLIT 2>/dev/null \
             | sed -E 's/[^a-zA-Z0-9]+/-/g; s/^-+|-+$//g')
           if [ -z "$SAFE_NAME" ]; then SAFE_NAME="app"; fi
