@@ -145,11 +145,105 @@ jobs:
           package $PACKAGE_ID;
 
           import android.app.AlertDialog;
+          import android.app.DownloadManager;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.net.Uri;
           import android.os.Bundle;
+          import android.os.Environment;
+          import android.os.Message;
+          import android.webkit.CookieManager;
+          import android.webkit.DownloadListener;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebSettings;
           import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.widget.Toast;
           import com.getcapacitor.BridgeActivity;
 
           public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setupExternalLinksAndDownloads();
+              }
+
+              // Por omissão, o WebView do Android ignora target="_blank" e
+              // window.open() — não há "segunda aba" para onde ir, por isso um
+              // botão que faz download/abre link nessas condições fica sem
+              // efeito nenhum dentro da app (mas funciona no browser normal).
+              // Isto intercepta essas tentativas e reencaminha o URL real para
+              // o DownloadManager do Android (ficheiros) ou para o browser do
+              // sistema (páginas normais).
+              private void setupExternalLinksAndDownloads() {
+                  WebView webView = this.bridge.getWebView();
+                  if (webView == null) return;
+
+                  WebSettings settings = webView.getSettings();
+                  settings.setSupportMultipleWindows(true);
+                  settings.setJavaScriptCanOpenWindowsAutomatically(true);
+
+                  webView.setWebChromeClient(new WebChromeClient() {
+                      @Override
+                      public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                          WebView popup = new WebView(MainActivity.this);
+                          popup.setWebViewClient(new WebViewClient() {
+                              @Override
+                              public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest request) {
+                                  openExternally(request.getUrl().toString());
+                                  return true;
+                              }
+                              @Override
+                              public boolean shouldOverrideUrlLoading(WebView v, String url) {
+                                  openExternally(url);
+                                  return true;
+                              }
+                          });
+                          WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                          transport.setWebView(popup);
+                          resultMsg.sendToTarget();
+                          return true;
+                      }
+                  });
+
+                  // Cobre também downloads diretos (ex: <a href="ficheiro.apk"> sem
+                  // target="_blank", ou navegação normal para um URL com
+                  // Content-Disposition: attachment).
+                  webView.setDownloadListener(new DownloadListener() {
+                      @Override
+                      public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+                          openExternally(url);
+                      }
+                  });
+              }
+
+              private void openExternally(String url) {
+                  Uri uri = Uri.parse(url);
+                  String scheme = uri.getScheme();
+                  if (scheme != null && (scheme.equals("http") || scheme.equals("https"))) {
+                      try {
+                          DownloadManager.Request request = new DownloadManager.Request(uri);
+                          request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                          String cookies = CookieManager.getInstance().getCookie(url);
+                          if (cookies != null) request.addRequestHeader("Cookie", cookies);
+                          String fileName = uri.getLastPathSegment();
+                          request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName != null ? fileName : "download");
+                          DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                          if (dm != null) {
+                              dm.enqueue(request);
+                              Toast.makeText(this, "A descarregar para a pasta Transferências…", Toast.LENGTH_LONG).show();
+                              return;
+                          }
+                      } catch (Exception e) {
+                          // segue para abrir no browser do sistema
+                      }
+                  }
+                  Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                  intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                  startActivity(intent);
+              }
+
               @Override
               public void onBackPressed() {
                   WebView webView = this.bridge.getWebView();
