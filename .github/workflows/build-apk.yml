@@ -63,6 +63,83 @@ jobs:
           # em modo "url" este ficheiro é só um fallback local — quem manda é o
           # server.url do capacitor.config.json, configurado no passo seguinte.
 
+      - name: Injetar polyfill de download/partilha (blob) para Android
+        # Só se aplica em modo "file"/"zip" (conteúdo embutido em www/index.html).
+        # Em modo "url" a app aponta para um site externo — não há HTML local
+        # para injetar nada, por isso este passo é ignorado nesse caso.
+        #
+        # O que faz: intercepta, ao nível do WebView (sem a app saber),
+        # qualquer <a download> com href="blob:..." e qualquer
+        # navigator.share({files:...}) — os dois padrões mais comuns que as
+        # apps já usam para exportar ficheiros — e reencaminha para a ponte
+        # nativa window.AndroidSave.saveBase64(...) registada no
+        # MainActivity.java (grava direto na pasta Transferências via
+        # MediaStore). Assim, qualquer app gerada por este workflow ganha
+        # exportação a funcionar dentro do APK sem precisar de alterar
+        # nenhuma linha do próprio código da app.
+        run: |
+          python3 - <<'PYEOF'
+          import re
+
+          path = "www/index.html"
+          try:
+              with open(path, "r", encoding="utf-8") as f:
+                  html = f.read()
+          except FileNotFoundError:
+              print("www/index.html não encontrado — a saltar injeção.")
+          else:
+              script = '''<script>
+          (function(){
+            if(!window.AndroidSave || !window.AndroidSave.saveBase64) return; // só dentro do APK
+            function blobToBase64(blob){
+              return new Promise((res,rej)=>{
+                const r = new FileReader();
+                r.onload = () => res(r.result.split(",")[1]);
+                r.onerror = rej;
+                r.readAsDataURL(blob);
+              });
+            }
+            // Intercepta <a download> apontando para blob:
+            document.addEventListener("click", function(ev){
+              const a = ev.target.closest && ev.target.closest("a[download]");
+              if(!a) return;
+              const href = a.getAttribute("href") || "";
+              if(!href.startsWith("blob:")) return;
+              ev.preventDefault();
+              ev.stopImmediatePropagation();
+              fetch(href).then(r=>r.blob()).then(async blob=>{
+                const b64 = await blobToBase64(blob);
+                const filename = a.getAttribute("download") || "ficheiro";
+                window.AndroidSave.saveBase64(filename, b64, blob.type || "application/octet-stream");
+              });
+            }, true);
+            // Substitui navigator.share/canShare para ficheiros
+            const originalShare = navigator.share ? navigator.share.bind(navigator) : null;
+            navigator.canShare = function(data){
+              if(data && data.files && data.files.length) return true;
+              return false;
+            };
+            navigator.share = async function(data){
+              if(data && data.files && data.files.length){
+                const file = data.files[0];
+                const b64 = await blobToBase64(file);
+                window.AndroidSave.saveBase64(file.name, b64, file.type || "application/octet-stream");
+                return;
+              }
+              if(originalShare) return originalShare(data);
+            };
+          })();
+          </script>
+          '''
+              if re.search(r"</body>", html, re.IGNORECASE):
+                  html = re.sub(r"</body>", script + "</body>", html, count=1, flags=re.IGNORECASE)
+              else:
+                  html = html + script
+              with open(path, "w", encoding="utf-8") as f:
+                  f.write(html)
+              print("✓ polyfill de download/partilha injetado em www/index.html")
+          PYEOF
+
       - name: Cache de dependências npm (Capacitor)
         uses: actions/cache@v4
         with:
@@ -146,14 +223,19 @@ jobs:
 
           import android.app.AlertDialog;
           import android.app.DownloadManager;
+          import android.content.ContentResolver;
+          import android.content.ContentValues;
           import android.content.Context;
           import android.content.Intent;
           import android.net.Uri;
           import android.os.Bundle;
           import android.os.Environment;
           import android.os.Message;
+          import android.provider.MediaStore;
+          import android.util.Base64;
           import android.webkit.CookieManager;
           import android.webkit.DownloadListener;
+          import android.webkit.JavascriptInterface;
           import android.webkit.WebChromeClient;
           import android.webkit.WebResourceRequest;
           import android.webkit.WebSettings;
@@ -161,6 +243,7 @@ jobs:
           import android.webkit.WebViewClient;
           import android.widget.Toast;
           import com.getcapacitor.BridgeActivity;
+          import java.io.OutputStream;
 
           public class MainActivity extends BridgeActivity {
               @Override
@@ -183,6 +266,14 @@ jobs:
                   WebSettings settings = webView.getSettings();
                   settings.setSupportMultipleWindows(true);
                   settings.setJavaScriptCanOpenWindowsAutomatically(true);
+
+                  // Ponte JS -> Android para gravar ficheiros gerados no browser
+                  // (blobs .xlsx/.docx/etc). O WebView não trata URLs blob: em
+                  // <a download> nem suporta navigator.share({files}) como o
+                  // Chrome, por isso funciona no navegador mas não no APK.
+                  // A app chama window.AndroidSave.saveBase64(nome, base64, mime)
+                  // e o ficheiro é gravado diretamente na pasta Transferências.
+                  webView.addJavascriptInterface(new AndroidSave(this), "AndroidSave");
 
                   webView.setWebChromeClient(new WebChromeClient() {
                       @Override
@@ -265,6 +356,39 @@ jobs:
                       .setNegativeButton("Cancelar", (dialog, which) -> dialog.dismiss())
                       .setCancelable(true)
                       .show();
+              }
+
+              // Ponte para o JS gravar ficheiros (Excel/Word/etc gerados no
+              // browser) diretamente na pasta Transferências via MediaStore,
+              // já que o WebView não consegue descarregar blob: URLs.
+              public class AndroidSave {
+                  Context ctx;
+                  AndroidSave(Context c){ ctx = c; }
+
+                  @JavascriptInterface
+                  public void saveBase64(String filename, String base64Data, String mimeType) {
+                      runOnUiThread(() -> {
+                          try {
+                              byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
+                              ContentValues values = new ContentValues();
+                              values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+                              values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+                              values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                              ContentResolver resolver = ctx.getContentResolver();
+                              Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                              if (uri != null) {
+                                  try (OutputStream out = resolver.openOutputStream(uri)) {
+                                      out.write(bytes);
+                                  }
+                                  Toast.makeText(ctx, "Guardado em Transferências: " + filename, Toast.LENGTH_LONG).show();
+                              } else {
+                                  Toast.makeText(ctx, "Erro ao guardar ficheiro", Toast.LENGTH_LONG).show();
+                              }
+                          } catch (Exception e) {
+                              Toast.makeText(ctx, "Erro ao guardar: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                          }
+                      });
+                  }
               }
           }
           EOF
