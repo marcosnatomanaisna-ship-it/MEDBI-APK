@@ -117,6 +117,13 @@ jobs:
       - name: Adicionar plataforma Android
         run: npx cap add android
 
+      - name: Permissão de armazenamento (fallback download em Android < 10)
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i 's#<application#<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />\n    <application#' "$MANIFEST"
+          echo "--- AndroidManifest.xml ---"
+          cat "$MANIFEST"
+
       - name: Configurar botão "Voltar" e saída da app
         # Substitui o MainActivity.java gerado pelo "cap add android" (que por
         # omissão só tem "public class MainActivity extends BridgeActivity {}"),
@@ -145,11 +152,159 @@ jobs:
           package $PACKAGE_ID;
 
           import android.app.AlertDialog;
+          import android.app.DownloadManager;
+          import android.content.ContentValues;
+          import android.content.Intent;
+          import android.net.Uri;
+          import android.os.Build;
           import android.os.Bundle;
+          import android.os.Environment;
+          import android.provider.MediaStore;
+          import android.util.Base64;
+          import android.webkit.JavascriptInterface;
           import android.webkit.WebView;
+          import android.widget.Toast;
           import com.getcapacitor.BridgeActivity;
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.io.OutputStream;
 
           public class MainActivity extends BridgeActivity {
+
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  final WebView webView = this.bridge.getWebView();
+
+                  // Ponte JS -> Android: permite às apps (Blob/base64) gravar
+                  // ficheiros no telemóvel (exportar Word, PDF, imagens, etc.).
+                  webView.addJavascriptInterface(new DownloadBridge(this), "AndroidDownload");
+
+                  // Sem isto, a WebView do Android não faz NADA quando a página
+                  // tenta descarregar algo (blob:, data: ou http com anexo) —
+                  // é a causa de botões de "descarregar/exportar" ficarem mudos.
+                  webView.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) -> {
+                      String filename = guessFilename(contentDisposition, mimetype);
+                      if (url.startsWith("data:")) {
+                          try {
+                              String[] parts = url.split(",", 2);
+                              String meta = parts[0];
+                              String data = parts.length > 1 ? parts[1] : "";
+                              String mt = mimetype;
+                              if (meta.contains(":") && meta.contains(";")) {
+                                  mt = meta.substring(meta.indexOf(":") + 1, meta.indexOf(";"));
+                              }
+                              new DownloadBridge(this).saveBase64(data, filename, mt);
+                          } catch (Exception e) {
+                              Toast.makeText(this, "Erro ao processar ficheiro.", Toast.LENGTH_SHORT).show();
+                          }
+                      } else if (url.startsWith("blob:")) {
+                          String safeName = filename.replace("'", "");
+                          String js =
+                              "(function(){" +
+                              "  fetch('" + url + "').then(function(r){return r.blob();}).then(function(blob){" +
+                              "    var reader = new FileReader();" +
+                              "    reader.onloadend = function(){" +
+                              "      var base64 = reader.result.split(',')[1];" +
+                              "      AndroidDownload.saveBase64(base64, '" + safeName + "', blob.type || '" + mimetype + "');" +
+                              "    };" +
+                              "    reader.readAsDataURL(blob);" +
+                              "  }).catch(function(e){ console.log('download error', e); });" +
+                              "})();";
+                          webView.evaluateJavascript(js, null);
+                      } else {
+                          try {
+                              DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+                              request.setMimeType(mimetype);
+                              request.addRequestHeader("User-Agent", userAgent);
+                              request.setTitle(filename);
+                              request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                              request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+                              DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                              dm.enqueue(request);
+                              Toast.makeText(this, "A descarregar " + filename, Toast.LENGTH_SHORT).show();
+                          } catch (Exception e) {
+                              Toast.makeText(this, "Erro ao descarregar.", Toast.LENGTH_SHORT).show();
+                          }
+                      }
+                  });
+              }
+
+              private String guessFilename(String contentDisposition, String mimetype) {
+                  String filename = null;
+                  if (contentDisposition != null && contentDisposition.contains("filename=")) {
+                      filename = contentDisposition.replaceAll(".*filename=\"?([^\";]+)\"?.*", "\$1");
+                  }
+                  if (filename == null || filename.isEmpty() || filename.equals(contentDisposition)) {
+                      String ext = "";
+                      if (mimetype != null) {
+                          if (mimetype.contains("word")) ext = ".docx";
+                          else if (mimetype.contains("pdf")) ext = ".pdf";
+                          else if (mimetype.contains("sheet") || mimetype.contains("excel")) ext = ".xlsx";
+                          else if (mimetype.contains("presentation")) ext = ".pptx";
+                          else if (mimetype.contains("png")) ext = ".png";
+                          else if (mimetype.contains("jpeg")) ext = ".jpg";
+                          else if (mimetype.contains("json")) ext = ".json";
+                          else if (mimetype.contains("csv")) ext = ".csv";
+                          else if (mimetype.contains("text")) ext = ".txt";
+                      }
+                      filename = "download_" + System.currentTimeMillis() + ext;
+                  }
+                  return filename;
+              }
+
+              public class DownloadBridge {
+                  private final MainActivity activity;
+                  DownloadBridge(MainActivity activity) { this.activity = activity; }
+
+                  @JavascriptInterface
+                  public void saveBase64(String base64, String filename, String mimetype) {
+                      activity.runOnUiThread(() -> {
+                          try {
+                              byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+                              Uri savedUri = null;
+                              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                  ContentValues values = new ContentValues();
+                                  values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+                                  values.put(MediaStore.MediaColumns.MIME_TYPE, mimetype);
+                                  values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                                  Uri uri = activity.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                                  if (uri != null) {
+                                      OutputStream out = activity.getContentResolver().openOutputStream(uri);
+                                      if (out != null) { out.write(bytes); out.close(); }
+                                      savedUri = uri;
+                                  }
+                              } else {
+                                  File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                                  File file = new File(dir, filename);
+                                  FileOutputStream fos = new FileOutputStream(file);
+                                  fos.write(bytes);
+                                  fos.close();
+                                  activity.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)));
+                                  savedUri = Uri.fromFile(file);
+                              }
+
+                              if (savedUri != null) {
+                                  Toast.makeText(activity, "Descarregado: " + filename, Toast.LENGTH_LONG).show();
+                                  try {
+                                      Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+                                      viewIntent.setDataAndType(savedUri, mimetype);
+                                      viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                      viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                      activity.startActivity(viewIntent);
+                                  } catch (Exception ignored) {
+                                      // sem app para abrir o ficheiro — fica só na pasta Downloads
+                                  }
+                              } else {
+                                  Toast.makeText(activity, "Erro ao guardar " + filename, Toast.LENGTH_LONG).show();
+                              }
+                          } catch (Exception e) {
+                              Toast.makeText(activity, "Erro ao guardar ficheiro: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                          }
+                      });
+                  }
+              }
+
               @Override
               public void onBackPressed() {
                   WebView webView = this.bridge.getWebView();
