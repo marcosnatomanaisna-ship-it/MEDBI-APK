@@ -194,6 +194,20 @@ jobs:
       - name: Adicionar plataforma Android
         run: npx cap add android
 
+      - name: Adicionar permissão de armazenamento (Android ≤ 9, exportação legada)
+        # A partir do Android 10 (API 29) a gravação via MediaStore não precisa
+        # de permissão. Em versões mais antigas, o caminho legado de gravação
+        # (AndroidSave.saveLegacy) precisa de WRITE_EXTERNAL_STORAGE.
+        # maxSdkVersion="28" evita pedir isto (ou assustar o utilizador) em
+        # telemóveis mais recentes, onde nem é usada.
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if ! grep -q "WRITE_EXTERNAL_STORAGE" "$MANIFEST"; then
+            sed -i 's#<manifest #<manifest #; 0,/<application/s#<application#<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />\n    <application#' "$MANIFEST"
+          fi
+          echo "--- AndroidManifest.xml ---"
+          cat "$MANIFEST"
+
       - name: Configurar botão "Voltar" e saída da app
         # Substitui o MainActivity.java gerado pelo "cap add android" (que por
         # omissão só tem "public class MainActivity extends BridgeActivity {}"),
@@ -236,6 +250,7 @@ jobs:
           import android.webkit.CookieManager;
           import android.webkit.DownloadListener;
           import android.webkit.JavascriptInterface;
+          import android.webkit.RenderProcessGoneDetail;
           import android.webkit.WebChromeClient;
           import android.webkit.WebResourceRequest;
           import android.webkit.WebSettings;
@@ -243,6 +258,9 @@ jobs:
           import android.webkit.WebViewClient;
           import android.widget.Toast;
           import com.getcapacitor.BridgeActivity;
+          import com.getcapacitor.BridgeWebViewClient;
+          import java.io.File;
+          import java.io.FileOutputStream;
           import java.io.OutputStream;
 
           public class MainActivity extends BridgeActivity {
@@ -266,6 +284,24 @@ jobs:
                   WebSettings settings = webView.getSettings();
                   settings.setSupportMultipleWindows(true);
                   settings.setJavaScriptCanOpenWindowsAutomatically(true);
+
+                  // Se o processo do renderer do WebView rebentar (ex: pico de
+                  // memória a gerar um ficheiro grande), o Android por omissão
+                  // MATA A APP INTEIRA se isto não for tratado — não é um erro
+                  // Java, por isso nenhum try/catch apanha isto. Aqui evitamos
+                  // esse encerramento: destruímos a WebView crashada e
+                  // recriamos o ecrã em vez de deixar o sistema fechar a app.
+                  webView.setWebViewClient(new BridgeWebViewClient(this.bridge) {
+                      @Override
+                      public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                          Toast.makeText(MainActivity.this, "Ocorreu um problema a processar o pedido — a recarregar…", Toast.LENGTH_LONG).show();
+                          if (view != null) {
+                              view.destroy();
+                          }
+                          recreate();
+                          return true;
+                      }
+                  });
 
                   // Ponte JS -> Android para gravar ficheiros gerados no browser
                   // (blobs .xlsx/.docx/etc). O WebView não trata URLs blob: em
@@ -359,8 +395,8 @@ jobs:
               }
 
               // Ponte para o JS gravar ficheiros (Excel/Word/etc gerados no
-              // browser) diretamente na pasta Transferências via MediaStore,
-              // já que o WebView não consegue descarregar blob: URLs.
+              // browser) diretamente na pasta Transferências, já que o
+              // WebView não consegue descarregar blob: URLs.
               public class AndroidSave {
                   Context ctx;
                   AndroidSave(Context c){ ctx = c; }
@@ -370,24 +406,43 @@ jobs:
                       runOnUiThread(() -> {
                           try {
                               byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
-                              ContentValues values = new ContentValues();
-                              values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
-                              values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
-                              values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
-                              ContentResolver resolver = ctx.getContentResolver();
-                              Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-                              if (uri != null) {
-                                  try (OutputStream out = resolver.openOutputStream(uri)) {
-                                      out.write(bytes);
-                                  }
-                                  Toast.makeText(ctx, "Guardado em Transferências: " + filename, Toast.LENGTH_LONG).show();
+                              if (Build.VERSION.SDK_INT >= 29) {
+                                  saveViaMediaStore(filename, bytes, mimeType);
                               } else {
-                                  Toast.makeText(ctx, "Erro ao guardar ficheiro", Toast.LENGTH_LONG).show();
+                                  saveLegacy(filename, bytes);
                               }
-                          } catch (Exception e) {
-                              Toast.makeText(ctx, "Erro ao guardar: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                              Toast.makeText(ctx, "Guardado em Transferências: " + filename, Toast.LENGTH_LONG).show();
+                          } catch (Throwable t) {
+                              // Throwable (não só Exception): em Android < 10, a classe
+                              // MediaStore.Downloads não existe e lança um Error, que um
+                              // catch(Exception) não apanha — isso fechava a app sem aviso.
+                              Toast.makeText(ctx, "Erro ao guardar: " + t.getMessage(), Toast.LENGTH_LONG).show();
                           }
                       });
+                  }
+
+                  private void saveViaMediaStore(String filename, byte[] bytes, String mimeType) throws Exception {
+                      ContentValues values = new ContentValues();
+                      values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+                      values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+                      values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                      ContentResolver resolver = ctx.getContentResolver();
+                      Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                      if (uri == null) throw new Exception("insert() devolveu null");
+                      try (OutputStream out = resolver.openOutputStream(uri)) {
+                          out.write(bytes);
+                      }
+                  }
+
+                  private void saveLegacy(String filename, byte[] bytes) throws Exception {
+                      // Android 9 (API 28) e anteriores: sem MediaStore.Downloads —
+                      // grava direto na pasta pública de Transferências.
+                      File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                      if (!dir.exists()) dir.mkdirs();
+                      File file = new File(dir, filename);
+                      try (FileOutputStream out = new FileOutputStream(file)) {
+                          out.write(bytes);
+                      }
                   }
               }
           }
