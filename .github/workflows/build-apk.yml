@@ -164,10 +164,13 @@ jobs:
           import android.webkit.JavascriptInterface;
           import android.webkit.WebView;
           import android.widget.Toast;
+          import androidx.webkit.WebViewCompat;
+          import androidx.webkit.WebViewFeature;
           import com.getcapacitor.BridgeActivity;
           import java.io.File;
           import java.io.FileOutputStream;
           import java.io.OutputStream;
+          import java.util.Collections;
 
           public class MainActivity extends BridgeActivity {
 
@@ -179,6 +182,54 @@ jobs:
                   // Ponte JS -> Android: permite às apps (Blob/base64) gravar
                   // ficheiros no telemóvel (exportar Word, PDF, imagens, etc.).
                   webView.addJavascriptInterface(new DownloadBridge(this), "AndroidDownload");
+
+                  // Corre ANTES do JS da própria página (document-start), para
+                  // apanhar o Blob e o nome real do ficheiro (atributo "download"
+                  // do <a>) logo na origem — assim o ficheiro guardado fica com o
+                  // nome que a app deu, em vez de "download_<timestamp>".
+                  if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                      String patchJs =
+                          "(function(){" +
+                          "  if (window.__adPatched) return;" +
+                          "  window.__adPatched = true;" +
+                          "  var cache = {};" +
+                          "  var origCreate = URL.createObjectURL.bind(URL);" +
+                          "  URL.createObjectURL = function(blob){" +
+                          "    var u = origCreate(blob);" +
+                          "    cache[u] = blob;" +
+                          "    return u;" +
+                          "  };" +
+                          "  function handle(a){" +
+                          "    try {" +
+                          "      var href = a.href || '';" +
+                          "      var name = a.download || '';" +
+                          "      if (href.indexOf('blob:') === 0 && name && window.AndroidDownload) {" +
+                          "        var blob = cache[href];" +
+                          "        if (blob) {" +
+                          "          var reader = new FileReader();" +
+                          "          reader.onloadend = function(){" +
+                          "            var base64 = reader.result.split(',')[1];" +
+                          "            window.AndroidDownload.saveBase64(base64, name, blob.type || 'application/octet-stream');" +
+                          "          };" +
+                          "          reader.readAsDataURL(blob);" +
+                          "          return true;" +
+                          "        }" +
+                          "      }" +
+                          "    } catch(e) {}" +
+                          "    return false;" +
+                          "  }" +
+                          "  var origClick = HTMLAnchorElement.prototype.click;" +
+                          "  HTMLAnchorElement.prototype.click = function(){" +
+                          "    if (handle(this)) return;" +
+                          "    return origClick.call(this);" +
+                          "  };" +
+                          "  document.addEventListener('click', function(ev){" +
+                          "    var a = ev.target.closest ? ev.target.closest('a[download]') : null;" +
+                          "    if (a && handle(a)) { ev.preventDefault(); ev.stopPropagation(); }" +
+                          "  }, true);" +
+                          "})();";
+                      WebViewCompat.addDocumentStartJavaScript(webView, patchJs, Collections.singleton("*"));
+                  }
 
                   // Sem isto, a WebView do Android não faz NADA quando a página
                   // tenta descarregar algo (blob:, data: ou http com anexo) —
@@ -396,6 +447,10 @@ jobs:
                   force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24'
                   force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24'
               }
+          }
+
+          dependencies {
+              implementation 'androidx.webkit:webkit:1.14.0'
           }
           EOF
 
