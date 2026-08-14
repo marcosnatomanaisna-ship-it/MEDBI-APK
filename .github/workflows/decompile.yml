@@ -1,0 +1,102 @@
+name: apk-decompile
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "ID do job (gerado pelo backend)"
+        required: true
+      apk_path:
+        description: "caminho do .apk dentro do repo (ex: incoming/xxx-app.apk)"
+        required: true
+      want_smali:
+        description: "true/false"
+        required: false
+        default: "true"
+      want_java:
+        description: "true/false"
+        required: false
+        default: "true"
+      want_resources:
+        description: "true/false"
+        required: false
+        default: "true"
+
+jobs:
+  decompile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositÃ³rio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Preparar pastas
+        run: mkdir -p work/apktool_out work/jadx_out work/final
+
+      - name: Instalar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar apktool
+        if: ${{ github.event.inputs.want_smali == 'true' || github.event.inputs.want_resources == 'true' }}
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y apktool
+
+      - name: Descompilar recursos + smali (apktool)
+        if: ${{ github.event.inputs.want_smali == 'true' || github.event.inputs.want_resources == 'true' }}
+        run: |
+          apktool d "${{ github.event.inputs.apk_path }}" -o work/apktool_out -f
+          mkdir -p work/final/manifest work/final/resources work/final/smali
+          cp work/apktool_out/AndroidManifest.xml work/final/manifest/ 2>/dev/null || true
+          [ "${{ github.event.inputs.want_resources }}" = "true" ] && cp -r work/apktool_out/res work/final/resources/ 2>/dev/null || true
+          [ "${{ github.event.inputs.want_smali }}" = "true" ] && cp -r work/apktool_out/smali* work/final/smali/ 2>/dev/null || true
+
+      - name: Descarregar jadx
+        if: ${{ github.event.inputs.want_java == 'true' }}
+        run: |
+          curl -L -o jadx.zip https://github.com/skylot/jadx/releases/latest/download/jadx-1.5.1.zip
+          unzip -q jadx.zip -d jadx_bin
+
+      - name: Descompilar Java aproximado (jadx)
+        if: ${{ github.event.inputs.want_java == 'true' }}
+        run: |
+          ./jadx_bin/bin/jadx -d work/jadx_out "${{ github.event.inputs.apk_path }}" || true
+          mkdir -p work/final/java
+          cp -r work/jadx_out/sources/* work/final/java/ 2>/dev/null || true
+
+      - name: Gerar Ã¡rvore de ficheiros (para a UI)
+        run: |
+          cd work/final
+          find . -type f | sed 's|^\./||' > ../../tree.txt
+
+      - name: Compactar resultado
+        run: |
+          cd work/final
+          zip -qr ../../${{ github.event.inputs.job_id }}.zip .
+
+      - name: Publicar release com o resultado
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: decompile-${{ github.event.inputs.job_id }}
+          files: |
+            ${{ github.event.inputs.job_id }}.zip
+            tree.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Remove o .apk temporÃ¡rio de incoming/ para o repositÃ³rio nÃ£o acumular
+      # binÃ¡rios â€” corre sempre, mesmo que um passo anterior tenha falhado.
+      - name: Limpar apk temporÃ¡rio do repositÃ³rio
+        if: always()
+        run: |
+          git config user.name "apk-unpack-bot"
+          git config user.email "actions@github.com"
+          if [ -f "${{ github.event.inputs.apk_path }}" ]; then
+            git rm -f "${{ github.event.inputs.apk_path }}"
+            git commit -m "apk-unpack: limpar ${{ github.event.inputs.apk_path }}"
+            git push
+          fi
