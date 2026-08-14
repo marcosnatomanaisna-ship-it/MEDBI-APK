@@ -418,7 +418,9 @@ let lastLogCount = 0;
 async function pollJob(){
   clearTimeout(pollTimer);
   try{
-    const res = await fetch(API_BASE + '/' + currentJob.id);
+    const res = await fetch(API_BASE + '/' + currentJob.id, {
+      headers: { 'x-api-key': apiKeyInput.value.trim() }
+    });
     if (!res.ok) throw new Error('estado indisponível (' + res.status + ')');
     const data = await res.json();
 
