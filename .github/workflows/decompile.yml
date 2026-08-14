@@ -26,7 +26,7 @@ jobs:
   decompile:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout do repositÃ³rio
+      - name: Checkout do repositório
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
@@ -68,7 +68,7 @@ jobs:
           mkdir -p work/final/java
           cp -r work/jadx_out/sources/* work/final/java/ 2>/dev/null || true
 
-      - name: Gerar Ã¡rvore de ficheiros (para a UI)
+      - name: Gerar árvore de ficheiros (para a UI)
         run: |
           cd work/final
           find . -type f | sed 's|^\./||' > ../../tree.txt
@@ -88,9 +88,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Remove o .apk temporÃ¡rio de incoming/ para o repositÃ³rio nÃ£o acumular
-      # binÃ¡rios â€” corre sempre, mesmo que um passo anterior tenha falhado.
-      - name: Limpar apk temporÃ¡rio do repositÃ³rio
+      # Remove o .apk temporário de incoming/ para o repositório não acumular
+      # binários — corre sempre, mesmo que um passo anterior tenha falhado.
+      - name: Limpar apk temporário do repositório
         if: always()
         run: |
           git config user.name "apk-unpack-bot"
