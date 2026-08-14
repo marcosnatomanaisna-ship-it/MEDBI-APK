@@ -53,10 +53,13 @@ jobs:
         if: ${{ github.event.inputs.want_smali == 'true' || github.event.inputs.want_resources == 'true' }}
         run: |
           apktool d "${{ github.event.inputs.apk_path }}" -o work/apktool_out -f
-          mkdir -p work/final/manifest work/final/resources work/final/smali
+          mkdir -p work/final/manifest work/final/resources work/final/smali work/final/assets
           cp work/apktool_out/AndroidManifest.xml work/final/manifest/ 2>/dev/null || true
           [ "${{ github.event.inputs.want_resources }}" = "true" ] && cp -r work/apktool_out/res work/final/resources/ 2>/dev/null || true
+          [ "${{ github.event.inputs.want_resources }}" = "true" ] && cp -r work/apktool_out/assets/. work/final/assets/ 2>/dev/null || true
           [ "${{ github.event.inputs.want_smali }}" = "true" ] && cp -r work/apktool_out/smali* work/final/smali/ 2>/dev/null || true
+          # remove a pasta assets se ficou vazia (apk sem conteúdo web embutido)
+          rmdir work/final/assets 2>/dev/null || true
 
       - name: Descarregar jadx
         if: ${{ github.event.inputs.want_java == 'true' }}
