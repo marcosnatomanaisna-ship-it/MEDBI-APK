@@ -214,7 +214,7 @@
     <div class="drop" id="drop">
       <div class="icon">⇩</div>
       <div class="label">Arrasta o .apk para aqui ou toca para escolher</div>
-      <div class="sub">ficheiro único, até 60&nbsp;MB</div>
+      <div class="sub">ficheiro único, até 150&nbsp;MB</div>
       <input type="file" id="fileInput" accept=".apk">
     </div>
 
@@ -363,10 +363,21 @@ fileClear.addEventListener('click', e => {
   startBtn.disabled = true;
 });
 
+// limite real do backend é 200MB de payload (JSON+base64); em bytes de apk
+// bruto isso dá margem até ~145MB — acima disso o envio ainda pode
+// funcionar mas é lento e arriscado num backend com pouca memória (free tier).
+const APK_SOFT_WARN_BYTES = 100 * 1024 * 1024; // 100MB
+const APK_HARD_LIMIT_BYTES = 145 * 1024 * 1024; // ~145MB
+
 function pickFile(f){
   if (!f.name.toLowerCase().endsWith('.apk')){
     alert('Escolhe um ficheiro .apk');
     return;
+  }
+  if (f.size > APK_HARD_LIMIT_BYTES){
+    alert('Este apk (' + formatSize(f.size) + ') é maior que o limite atual do backend (~145MB). O envio provavelmente vai falhar com erro 413 — pede para aumentar o limite ou escolhe um apk mais pequeno.');
+  } else if (f.size > APK_SOFT_WARN_BYTES){
+    alert('Este apk é grande (' + formatSize(f.size) + '). O envio (em base64) pode demorar bastante, principalmente em redes móveis mais lentas. Usa Wi-Fi se possível.');
   }
   pickedFile = f;
   fileName.textContent = f.name;
