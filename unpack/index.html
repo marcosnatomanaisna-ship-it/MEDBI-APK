@@ -151,6 +151,17 @@
   .hint{font-size:11px;color:var(--text-dim);line-height:1.7;margin-top:14px;}
   .hint b{color:var(--text);}
 
+  /* aviso: apk aponta para servidor remoto (html embutido é só stub) */
+  .warn-banner{
+    display:none;margin-top:14px;padding:12px 14px;border-radius:6px;
+    border:1px solid var(--amber);background:rgba(224,176,64,0.08);
+    font-size:11.5px;line-height:1.7;color:var(--text);
+  }
+  .warn-banner.show{display:block;}
+  .warn-banner .t{color:var(--amber);font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+  .warn-banner .t::before{content:"⚠";}
+  .warn-banner code{background:var(--bg-raised);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--green);word-break:break-all;}
+
   footer{text-align:center;font-size:10.5px;color:var(--text-dim);padding:18px;opacity:.6;}
 
   /* hamburger drawer */
@@ -235,6 +246,11 @@
 
     <div class="tree" id="tree"></div>
 
+    <div class="warn-banner" id="remoteWarn">
+      <div class="t">este apk carrega conteúdo remoto</div>
+      <div id="remoteWarnBody"></div>
+    </div>
+
     <div class="result-actions" id="resultActions" style="display:none;">
       <button class="btn" id="downloadBtn">Descarregar .zip</button>
       <button class="btn secondary" id="newBtn">Nova desmontagem</button>
@@ -254,6 +270,7 @@
   <div id="savedList"></div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 /* ---------- config ---------- */
 const API_BASE = "https://medbi-license-server.onrender.com/api/apk-decompile";
@@ -285,6 +302,8 @@ const treeEl = document.getElementById('tree');
 const resultActions = document.getElementById('resultActions');
 const downloadBtn = document.getElementById('downloadBtn');
 const newBtn = document.getElementById('newBtn');
+const remoteWarn = document.getElementById('remoteWarn');
+const remoteWarnBody = document.getElementById('remoteWarnBody');
 
 const menuBtn = document.getElementById('menuBtn');
 const drawer = document.getElementById('drawer');
@@ -373,6 +392,7 @@ startBtn.addEventListener('click', async () => {
   treeEl.classList.remove('show');
   treeEl.innerHTML = '';
   resultActions.style.display = 'none';
+  remoteWarn.classList.remove('show');
   addLog('a preparar apk (base64)…', 'wait');
 
   try{
@@ -445,6 +465,7 @@ async function pollJob(){
       resultActions.style.display = 'flex';
       saveJob(currentJob);
       renderSavedList();
+      checkRemoteServer(data.downloadUrl);
     } else if (data.status === 'error'){
       setStatus('erro', 'error');
       startBtn.disabled = false;
@@ -480,6 +501,54 @@ function buildTree(node, parentEl){
   });
 }
 
+/* ---------- deteção: apk aponta para servidor remoto (capacitor.config.json) ----------
+   Se o .apk foi gerado em modo "URL remoto" (em vez de HTML embutido), o
+   assets/capacitor.config.json tem um server.url — e o index.html dentro
+   do apk é só um stub "A carregar…" que redireciona no arranque. Isto não
+   é um bug do desmontador; é preciso avisar para não se pensar que faltou
+   código. Fazemos a verificação aqui no browser, abrindo o próprio .zip
+   já descarregado do backend, para não precisar de tocar no backend. */
+async function checkRemoteServer(downloadUrl){
+  remoteWarn.classList.remove('show');
+  if (!downloadUrl || typeof JSZip === 'undefined') return;
+  try{
+    const res = await fetch(downloadUrl);
+    if (!res.ok) return;
+    const buf = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+
+    const candidates = Object.keys(zip.files).filter(name =>
+      /(^|\/)capacitor\.config\.json$/i.test(name)
+    );
+    if (!candidates.length) return;
+
+    for (const path of candidates){
+      const raw = await zip.files[path].async('string');
+      let cfg;
+      try{ cfg = JSON.parse(raw); }catch(e){ continue; }
+      const url = cfg && cfg.server && cfg.server.url;
+      if (url){
+        remoteWarnBody.innerHTML =
+          'Este apk foi construído em modo URL remoto: no arranque, o WebView ' +
+          'redireciona para <code>' + escapeHtml(url) + '</code> em vez de correr ' +
+          'HTML embutido. Por isso o <code>index.html</code> dentro do apk tem só ' +
+          'algumas linhas (um stub "A carregar…") — não é uma falha da desmontagem, ' +
+          'a app real vive nesse url remoto.';
+        remoteWarn.classList.add('show');
+        return;
+      }
+    }
+  }catch(e){
+    /* CORS, rede, ou zip inesperado — falha em silêncio, não é crítico */
+  }
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
 downloadBtn.addEventListener('click', () => {
   if (currentJob && currentJob.downloadUrl) window.location.href = currentJob.downloadUrl;
 });
@@ -489,6 +558,7 @@ newBtn.addEventListener('click', () => {
   filePicked.classList.remove('show');
   startBtn.disabled = true;
   currentJob = null;
+  remoteWarn.classList.remove('show');
 });
 
 /* ---------- saved jobs (drawer) ---------- */
