@@ -752,13 +752,8 @@ jobs:
             echo "(sem pasta lib/ — app não tem código nativo, normal em apps WebView/Capacitor puras)"
           fi
           echo ""
-          echo "--- badging do .apk reconstruído (aapt2 do apktool) ---"
-          AAPT2_BIN=$(find ~/.local/share/apktool -iname 'aapt2*' -type f 2>/dev/null | head -n1)
-          if [ -n "$AAPT2_BIN" ]; then
-            "$AAPT2_BIN" dump badging app-unsigned.apk 2>/dev/null | grep -E 'sdkVersion|targetSdkVersion|native-code|package:' || true
-          else
-            echo "(não encontrei o aapt2 do apktool para inspecionar o .apk final)"
-          fi
+          echo "--- badging completo do .apk reconstruído (aapt2 do Android SDK) ---"
+          "$BUILD_TOOLS_DIR/aapt2" dump badging app-unsigned.apk 2>&1 || echo "(aapt2 do SDK falhou a ler o apk)"
 
       - name: Alinhar e assinar o APK reconstruído
         if: ${{ github.event.inputs.source_mode == 'decompiled' }}
@@ -772,6 +767,9 @@ jobs:
             --out android-app-decompiled-release.apk \
             app-aligned.apk
           "$BUILD_TOOLS_DIR/apksigner" verify android-app-decompiled-release.apk && echo "✓ assinatura válida"
+          echo ""
+          echo "--- badging do .apk FINAL assinado (para comparar com o não-assinado) ---"
+          "$BUILD_TOOLS_DIR/aapt2" dump badging android-app-decompiled-release.apk 2>&1 | head -n 20 || echo "(aapt2 falhou a ler o apk assinado)"
 
       - name: Renomear ficheiro final para o nome da app
         id: outname
