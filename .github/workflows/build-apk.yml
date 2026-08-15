@@ -731,22 +731,52 @@ jobs:
           "$BUILD_TOOLS_DIR/apksigner" --version
           "$BUILD_TOOLS_DIR/zipalign" 2>&1 | head -n1 || true
 
-      - name: Remover exigência de splits (isSplitRequired)
+      - name: Remover exigência de splits (isSplitRequired / requiredSplitTypes / splitTypes)
         # Apps publicadas na Play Store como "App Bundle com isolated splits"
-        # trazem esta flag no AndroidManifest.xml, mesmo no base.apk sozinho:
-        #   android:isSplitRequired="true"
+        # ou "Play Feature Delivery" trazem uma destas flags no
+        # AndroidManifest.xml (a Google mudou o mecanismo ao longo do tempo,
+        # por isso cobrimos todas as variantes conhecidas):
+        #   android:isSplitRequired="true"          (API 28+)
+        #   android:requiredSplitTypes="..."        (API 31+)
+        #   android:splitTypes="..."                (API 31+)
         # Isto diz ao Android "recusa instalar-me sem as outras peças (splits)
         # que vieram comigo" — mesmo quando o .apk reconstruído já é único e
-        # autossuficiente. É só uma trava de instalação, não afeta o
-        # funcionamento da app; por isso desligamo-la antes de reconstruir.
+        # autossuficiente. São só travas de instalação, não afetam o
+        # funcionamento da app; por isso desligamo-las/removemo-las antes de
+        # reconstruir.
         if: ${{ github.event.inputs.source_mode == 'decompiled' }}
         run: |
+          echo "--- linhas do manifesto que mencionam 'split' (antes) ---"
+          grep -in 'split' decompiled/AndroidManifest.xml || echo "(nenhuma ocorrência de 'split' no manifesto)"
+          echo ""
+
+          CHANGED=0
+
           if grep -q 'isSplitRequired="true"' decompiled/AndroidManifest.xml; then
             sed -i 's/android:isSplitRequired="true"/android:isSplitRequired="false"/g' decompiled/AndroidManifest.xml
             echo "✓ isSplitRequired mudado de true para false."
-          else
-            echo "(sem isSplitRequired=\"true\" no manifesto — nada a fazer)"
+            CHANGED=1
           fi
+
+          if grep -q 'requiredSplitTypes="' decompiled/AndroidManifest.xml; then
+            sed -i -E 's/[[:space:]]*android:requiredSplitTypes="[^"]*"//g' decompiled/AndroidManifest.xml
+            echo "✓ requiredSplitTypes removido."
+            CHANGED=1
+          fi
+
+          if grep -q 'splitTypes="' decompiled/AndroidManifest.xml; then
+            sed -i -E 's/[[:space:]]*android:splitTypes="[^"]*"//g' decompiled/AndroidManifest.xml
+            echo "✓ splitTypes removido."
+            CHANGED=1
+          fi
+
+          if [ "$CHANGED" = "0" ]; then
+            echo "(nenhuma das variantes conhecidas encontrada — nada mudado)"
+          fi
+
+          echo ""
+          echo "--- linhas do manifesto que mencionam 'split' (depois) ---"
+          grep -in 'split' decompiled/AndroidManifest.xml || echo "(nenhuma ocorrência de 'split' no manifesto)"
 
       - name: Reconstruir APK a partir do projeto descompilado (apktool)
         if: ${{ github.event.inputs.source_mode == 'decompiled' }}
