@@ -731,6 +731,23 @@ jobs:
           "$BUILD_TOOLS_DIR/apksigner" --version
           "$BUILD_TOOLS_DIR/zipalign" 2>&1 | head -n1 || true
 
+      - name: Remover exigência de splits (isSplitRequired)
+        # Apps publicadas na Play Store como "App Bundle com isolated splits"
+        # trazem esta flag no AndroidManifest.xml, mesmo no base.apk sozinho:
+        #   android:isSplitRequired="true"
+        # Isto diz ao Android "recusa instalar-me sem as outras peças (splits)
+        # que vieram comigo" — mesmo quando o .apk reconstruído já é único e
+        # autossuficiente. É só uma trava de instalação, não afeta o
+        # funcionamento da app; por isso desligamo-la antes de reconstruir.
+        if: ${{ github.event.inputs.source_mode == 'decompiled' }}
+        run: |
+          if grep -q 'isSplitRequired="true"' decompiled/AndroidManifest.xml; then
+            sed -i 's/android:isSplitRequired="true"/android:isSplitRequired="false"/g' decompiled/AndroidManifest.xml
+            echo "✓ isSplitRequired mudado de true para false."
+          else
+            echo "(sem isSplitRequired=\"true\" no manifesto — nada a fazer)"
+          fi
+
       - name: Reconstruir APK a partir do projeto descompilado (apktool)
         if: ${{ github.event.inputs.source_mode == 'decompiled' }}
         run: |
