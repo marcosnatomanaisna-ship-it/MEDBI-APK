@@ -228,6 +228,7 @@
       <label class="opt"><input type="checkbox" id="optSmali" checked> código smali (apktool) <span class="desc">— assembly do Dalvik, editável</span></label>
       <label class="opt"><input type="checkbox" id="optJava" checked> Java aproximado (jadx) <span class="desc">— mais legível, nem sempre perfeito</span></label>
       <label class="opt"><input type="checkbox" id="optRes" checked> recursos e manifest <span class="desc">— layouts, strings, imagens, AndroidManifest.xml</span></label>
+      <label class="opt"><input type="checkbox" id="optAppOnly" checked> só o código da app <span class="desc">— remove android/androidx/kotlin/bibliotecas de sistema, mantém só o teu pacote</span></label>
     </div>
 
     <input type="password" id="apiKeyInput" placeholder="Chave de acesso" style="width:100%;margin-top:14px;padding:10px 12px;background:var(--bg-raised);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;">
@@ -380,7 +381,8 @@ startBtn.addEventListener('click', async () => {
   const opts = {
     smali: document.getElementById('optSmali').checked,
     java: document.getElementById('optJava').checked,
-    resources: document.getElementById('optRes').checked
+    resources: document.getElementById('optRes').checked,
+    appOnly: document.getElementById('optAppOnly').checked
   };
 
   jobPanel.classList.add('show');
