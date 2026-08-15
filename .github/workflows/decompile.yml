@@ -61,7 +61,10 @@ jobs:
           mkdir -p work/final/manifest work/final/resources work/final/smali work/final/assets
           cp work/apktool_out/AndroidManifest.xml work/final/manifest/ 2>/dev/null || true
           [ "${{ github.event.inputs.want_resources }}" = "true" ] && cp -r work/apktool_out/res work/final/resources/ 2>/dev/null || true
-          [ "${{ github.event.inputs.want_resources }}" = "true" ] && cp -r work/apktool_out/assets/. work/final/assets/ 2>/dev/null || true
+          # os assets web (html/js/css do Capacitor) vêm sempre, independente
+          # de want_resources — é o "código da app" propriamente dito, não
+          # um "recurso" no sentido do checkbox de layouts/strings/imagens.
+          cp -r work/apktool_out/assets/. work/final/assets/ 2>/dev/null || true
           [ "${{ github.event.inputs.want_smali }}" = "true" ] && cp -r work/apktool_out/smali* work/final/smali/ 2>/dev/null || true
           # remove a pasta assets se ficou vazia (apk sem conteúdo web embutido)
           rmdir work/final/assets 2>/dev/null || true
