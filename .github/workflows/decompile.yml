@@ -41,6 +41,24 @@ jobs:
       - name: Preparar pastas
         run: mkdir -p work/apktool_out work/jadx_out work/final
 
+      - name: Diagnóstico — confirmar que o apk está presente (com auto-recuperação)
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          for tentativa in 1 2 3; do
+            if [ -f "${{ github.event.inputs.apk_path }}" ]; then
+              echo "✓ ficheiro encontrado na tentativa $tentativa, $(stat -c%s "${{ github.event.inputs.apk_path }}") bytes"
+              exit 0
+            fi
+            echo "✗ tentativa $tentativa: ficheiro ainda não visível — pode ser atraso de propagação do commit feito pela API. A tentar atualizar o checkout..."
+            git fetch origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            sleep 3
+          done
+          echo "✗ ficheiro definitivamente não encontrado após 3 tentativas: ${{ github.event.inputs.apk_path }}"
+          ls -la incoming/ 2>/dev/null || echo "(pasta incoming/ não existe)"
+          git log --oneline -5
+          exit 1
+
       - name: Instalar Java
         uses: actions/setup-java@v4
         with:
