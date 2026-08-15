@@ -87,6 +87,18 @@ jobs:
           # remove a pasta assets se ficou vazia (apk sem conteúdo web embutido)
           rmdir work/final/assets 2>/dev/null || true
 
+          # apktool.yml é METADADOS DE RECONSTRUÇÃO (versionCode/Name, tipo de
+          # compressão, sdk mínimo/alvo, lista de ficheiros a não comprimir).
+          # Sem isto, uma reconstrução posterior via "apktool b" tende a falhar
+          # ou a gerar um .apk que não instala — por isso vai sempre incluído,
+          # independente das opções smali/java/resources escolhidas.
+          cp work/apktool_out/apktool.yml work/final/apktool.yml 2>/dev/null || true
+
+          # "unknown/" guarda ficheiros do .apk original que o apktool não
+          # reconhece (raro, mas existe em algumas apps) — incluído quando
+          # presente, para a reconstrução ficar mais fiel ao original.
+          [ -d work/apktool_out/unknown ] && cp -r work/apktool_out/unknown work/final/unknown || true
+
       - name: Detetar pacote da própria app
         id: pkg
         run: |

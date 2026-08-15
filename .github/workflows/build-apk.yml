@@ -10,17 +10,38 @@ on:
         description: 'Package ID (ex: com.exemplo.app)'
         required: true
       source_mode:
-        description: 'file ou url'
+        description: 'file, url ou decompiled (projeto smali/+res/+AndroidManifest.xml gerado pelo apktool)'
         required: true
         default: 'file'
+        type: choice
+        options:
+          - file
+          - url
+          - decompiled
       source_url:
         description: 'URL da app (só usado se source_mode = url)'
         required: false
         default: ''
       output_format:
-        description: 'apk ou aab'
+        description: 'apk ou aab (aab não é suportado em source_mode=decompiled — o apktool só reconstrói APK)'
         required: true
         default: 'apk'
+      keep_original_package:
+        description: 'Só em source_mode=decompiled: manter o package original do AndroidManifest.xml em vez do package_id acima?'
+        required: false
+        default: 'sim'
+        type: choice
+        options:
+          - sim
+          - nao
+      force_new_keystore:
+        description: 'Ignorar o KEYSTORE_BASE64 fixo (se existir) e gerar uma keystore nova só para este build?'
+        required: false
+        default: 'nao'
+        type: choice
+        options:
+          - nao
+          - sim
       splash_color:
         description: 'Cor de fundo do splash screen (hex, ex: #FDE2DD)'
         required: false
@@ -36,7 +57,15 @@ jobs:
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
+      - name: Validar combinação de inputs
+        run: |
+          if [ "${{ github.event.inputs.source_mode }}" = "decompiled" ] && [ "${{ github.event.inputs.output_format }}" = "aab" ]; then
+            echo "✗ source_mode=decompiled só produz APK — o apktool reconstrói um APK, não um App Bundle. Corre novamente com output_format=apk."
+            exit 1
+          fi
+
       - name: Configurar Node.js
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -48,9 +77,11 @@ jobs:
           java-version: '21'
 
       - name: Configurar cache do Gradle
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         uses: gradle/actions/setup-gradle@v4
 
       - name: Preparar pasta www/
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         run: |
           mkdir -p www
           if [ "${{ github.event.inputs.source_mode }}" = "url" ]; then
@@ -63,7 +94,87 @@ jobs:
           # em modo "url" este ficheiro é só um fallback local — quem manda é o
           # server.url do capacitor.config.json, configurado no passo seguinte.
 
+      - name: "Preparar pasta decompiled/ (projeto do apk-unpack — manifest/+resources/+smali/+java/)"
+        # Tal como em modo "file", o backend já commitou "decompiled.zip" na raiz
+        # do repo antes de disparar este workflow — este passo extrai e depois
+        # REORGANIZA, porque o zip que sai da tua app "destrói" (apk-decompile,
+        # decompile.yml) não vem já na forma que o "apktool b" exige. Vem assim:
+        #
+        #   manifest/AndroidManifest.xml
+        #   resources/res/...
+        #   smali/smali/...  smali/smali_classes2/...
+        #   java/...            ← código Java aproximado (jadx), só para LERES;
+        #                         o apktool não o usa para reconstruir nada.
+        #   assets/...          (opcional)
+        #   apktool.yml         (metadados de reconstrução)
+        #
+        # e o "apktool b" precisa disto na raiz do projeto:
+        #
+        #   AndroidManifest.xml, res/, smali/, smali_classes2/, assets/, apktool.yml
+        #
+        # Se editaste código, tem de ser dentro de smali/ — editar os .java em
+        # java/ não tem qualquer efeito no .apk reconstruído.
+        if: ${{ github.event.inputs.source_mode == 'decompiled' }}
+        run: |
+          if [ ! -f decompiled.zip ]; then
+            echo "✗ decompiled.zip não encontrado na raiz do repo — o backend tem de o commitar antes de disparar o workflow em source_mode=decompiled."
+            exit 1
+          fi
+          rm -rf decompiled
+          mkdir -p decompiled
+          unzip -q decompiled.zip -d decompiled
+
+          # Se o zip tiver uma única pasta-raiz, sobe o conteúdo um nível.
+          ENTRIES=(decompiled/*)
+          if [ "${#ENTRIES[@]}" -eq 1 ] && [ -d "${ENTRIES[0]}" ]; then
+            mv "${ENTRIES[0]}"/* decompiled/
+            rmdir "${ENTRIES[0]}"
+          fi
+
+          echo "--- conteúdo recebido (antes de reorganizar) ---"
+          find decompiled -maxdepth 1
+
+          # manifest/AndroidManifest.xml -> AndroidManifest.xml
+          if [ -f decompiled/manifest/AndroidManifest.xml ]; then
+            mv decompiled/manifest/AndroidManifest.xml decompiled/AndroidManifest.xml
+            rm -rf decompiled/manifest
+          fi
+
+          # resources/res -> res
+          if [ -d decompiled/resources/res ]; then
+            mv decompiled/resources/res decompiled/res
+          fi
+          rm -rf decompiled/resources
+
+          # smali/smali -> smali, smali/smali_classes2 -> smali_classes2, etc.
+          if [ -d decompiled/smali ]; then
+            mv decompiled/smali decompiled/__smali_bundle
+            for d in decompiled/__smali_bundle/*/; do
+              [ -d "$d" ] || continue
+              mv "$d" "decompiled/$(basename "${d%/}")"
+            done
+            rm -rf decompiled/__smali_bundle
+          fi
+
+          # java/ é só leitura (jadx) — o apktool não sabe o que fazer com ele
+          # e não deve ir parar dentro do .apk reconstruído.
+          rm -rf decompiled/java
+
+          # assets/ e apktool.yml já ficam na raiz certa depois do "sobe um nível" acima — nada a fazer.
+
+          echo "--- conteúdo reorganizado (pronto para apktool b) ---"
+          find decompiled -maxdepth 1
+
+          if [ ! -f decompiled/AndroidManifest.xml ]; then
+            echo "✗ AndroidManifest.xml não encontrado depois de reorganizar — confirma que o zip veio da tua app de descompilação (apk-unpack) com a estrutura manifest/+smali/+resources/."
+            exit 1
+          fi
+          if [ ! -f decompiled/apktool.yml ]; then
+            echo "⚠ apktool.yml não encontrado — se a tua app 'destrói' ainda não foi atualizada para o incluir no zip, a reconstrução pode falhar ou gerar um .apk com compressão/versão erradas. Atualiza o decompile.yml para incluir 'apktool.yml' no resultado."
+          fi
+
       - name: Cache de dependências npm (Capacitor)
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         uses: actions/cache@v4
         with:
           path: |
@@ -72,6 +183,7 @@ jobs:
           key: capacitor-deps-${{ runner.os }}-v2
 
       - name: Instalar Capacitor
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
@@ -82,6 +194,7 @@ jobs:
         # e o passo seguinte (server.url em modo url) precisa de encontrar o .json.
         # Isto também evita ambiguidade: com os dois ficheiros a existir, o Capacitor
         # prioriza o .ts e as edições feitas ao .json seriam ignoradas.
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         env:
           APP_NAME: ${{ github.event.inputs.app_name }}
           PACKAGE_ID: ${{ github.event.inputs.package_id }}
@@ -115,9 +228,11 @@ jobs:
           "
 
       - name: Adicionar plataforma Android
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         run: npx cap add android
 
       - name: Permissão de armazenamento (fallback download em Android < 10)
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i 's#<application#<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />\n    <application#' "$MANIFEST"
@@ -137,6 +252,7 @@ jobs:
         # Nativo (não JS/CSS injetado na página) — funciona da mesma forma em
         # modo "file"/"zip" (HTML embutido) e em modo "url" (WebView aponta
         # para um site externo, onde não há como controlar o HTML da página).
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         env:
           PACKAGE_ID: ${{ github.event.inputs.package_id }}
         run: |
@@ -384,6 +500,7 @@ jobs:
           cat "$MAIN_ACTIVITY"
 
       - name: Gerar ícone e splash screen da app
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         run: |
           RAW_COLOR="${{ github.event.inputs.splash_color }}"
           if [[ "$RAW_COLOR" =~ ^#[0-9A-Fa-f]{6}$ ]]; then
@@ -409,6 +526,7 @@ jobs:
           fi
 
       - name: Sincronizar
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         run: npx cap sync android
 
       - name: Forçar cor do splash no Android 12+ (API 31)
@@ -417,6 +535,7 @@ jobs:
         # nativa, que lê a cor de values-v31/styles.xml (windowSplashScreenBackground).
         # Se essa versão do tema não estiver alinhada, o telemóvel ignora a cor
         # escolhida e mostra a cor por defeito. Este passo força-a diretamente.
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         run: |
           STYLES="android/app/src/main/res/values/styles.xml"
           echo "--- styles.xml antes da alteração ---"
@@ -438,6 +557,7 @@ jobs:
           cat android/app/src/main/res/values-v31/styles.xml
 
       - name: Corrigir conflito de versões do Kotlin
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         run: |
           cat >> android/app/build.gradle <<'EOF'
 
@@ -455,6 +575,7 @@ jobs:
           EOF
 
       - name: Otimizar definições do Gradle (paralelismo + cache de build)
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         run: |
           cat >> android/gradle.properties <<'EOF'
           org.gradle.parallel=true
@@ -473,14 +594,18 @@ jobs:
           # chega ao bash já como uma string normal, nunca como código.
           APP_NAME: ${{ github.event.inputs.app_name }}
         run: |
-          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ] && [ "${{ github.event.inputs.force_new_keystore }}" != "sim" ]; then
             echo "A usar keystore fixa (secret KEYSTORE_BASE64) — assinatura consistente entre builds."
             echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
             echo "STORE_PASS=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
             echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
             echo "KEY_PASS=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
           else
-            echo "⚠ Sem keystore fixa configurada — a gerar uma nova (apps futuras não vão poder atualizar esta instalação sem desinstalar primeiro)."
+            if [ "${{ github.event.inputs.force_new_keystore }}" = "sim" ]; then
+              echo "⚠ force_new_keystore=sim — a ignorar a keystore fixa e a gerar uma nova só para este build (a app resultante não vai poder ser atualizada por cima de instalações assinadas com outra keystore)."
+            else
+              echo "⚠ Sem keystore fixa configurada — a gerar uma nova (apps futuras não vão poder atualizar esta instalação sem desinstalar primeiro)."
+            fi
             keytool -genkeypair -v \
               -keystore release.keystore \
               -alias appkey \
@@ -493,6 +618,7 @@ jobs:
           fi
 
       - name: Build APK/AAB assinado
+        if: ${{ github.event.inputs.source_mode != 'decompiled' }}
         working-directory: android
         run: |
           chmod +x gradlew
@@ -512,6 +638,103 @@ jobs:
               -Pandroid.injected.signing.key.password="$KEY_PASS"
           fi
 
+      - name: Renomear package no projeto descompilado (manifesto + smali + recursos)
+        # Por omissão (keep_original_package=sim) não mexemos em nada.
+        #
+        # Quando pedido, isto faz um rename "a sério", não só o atributo
+        # package= do manifesto:
+        #   1. Move as pastas smali/<caminho-antigo> (e smali_classes2/, etc.,
+        #      se existirem) para smali/<caminho-novo>, refletindo o novo
+        #      appId na estrutura de diretórios.
+        #   2. Substitui todas as ocorrências do package antigo — em forma
+        #      "com.exemplo.app" e "com/exemplo/app" — dentro de todos os
+        #      .smali e .xml do projeto (referências de classe entre
+        #      arquivos, o atributo package= e android:name= do manifesto,
+        #      authorities de ContentProvider, etc.)
+        #
+        # Limitação que fica por resolver automaticamente: se a app tiver
+        # bibliotecas nativas (.so) que comparem o nome do pacote em código
+        # C/C++ (ex: verificação de integridade/assinatura embutida no
+        # nativo), isto não é tocado — só texto em smali/xml é substituído.
+        if: ${{ github.event.inputs.source_mode == 'decompiled' && github.event.inputs.keep_original_package == 'nao' }}
+        env:
+          PACKAGE_ID: ${{ github.event.inputs.package_id }}
+        run: |
+          OLD_PKG=$(grep -o 'package="[^"]*"' decompiled/AndroidManifest.xml | head -n1 | sed 's/package="//;s/"//')
+          NEW_PKG="$PACKAGE_ID"
+          if [ -z "$OLD_PKG" ]; then
+            echo "✗ não consegui ler o atributo package= do AndroidManifest.xml original — abortando rename."
+            exit 1
+          fi
+          if [ "$OLD_PKG" = "$NEW_PKG" ]; then
+            echo "Package novo é igual ao original ($OLD_PKG) — nada a fazer."
+            exit 0
+          fi
+          OLD_PATH=$(echo "$OLD_PKG" | tr '.' '/')
+          NEW_PATH=$(echo "$NEW_PKG" | tr '.' '/')
+          echo "Package original: $OLD_PKG ($OLD_PATH)"
+          echo "Package novo:     $NEW_PKG ($NEW_PATH)"
+
+          # 1) Mover as pastas smali*/<caminho-antigo> -> smali*/<caminho-novo>
+          for smalidir in decompiled/smali*/; do
+            [ -d "$smalidir" ] || continue
+            if [ -d "${smalidir}${OLD_PATH}" ]; then
+              mkdir -p "$(dirname "${smalidir}${NEW_PATH}")"
+              mv "${smalidir}${OLD_PATH}" "${smalidir}${NEW_PATH}"
+              echo "  movido: ${smalidir}${OLD_PATH} → ${smalidir}${NEW_PATH}"
+            fi
+          done
+
+          # 2) Substituir todas as referências textuais (forma com pontos e com barras)
+          #    em .smali e .xml do projeto inteiro (inclui AndroidManifest.xml e res/).
+          MATCHES=$(grep -rlZ -e "$OLD_PKG" -e "$OLD_PATH" \
+            --include='*.smali' --include='*.xml' decompiled 2>/dev/null || true)
+          if [ -n "$MATCHES" ]; then
+            echo "$MATCHES" | xargs -0 sed -i \
+              -e "s#${OLD_PATH}#${NEW_PATH}#g" \
+              -e "s#${OLD_PKG}#${NEW_PKG}#g"
+          fi
+
+          echo "--- confirmação ---"
+          grep 'package=' decompiled/AndroidManifest.xml
+          REMAINING=$(grep -rl -e "$OLD_PKG" -e "$OLD_PATH" --include='*.smali' --include='*.xml' decompiled 2>/dev/null | wc -l)
+          echo "Ficheiros .smali/.xml que ainda mencionam o package antigo: $REMAINING"
+          if [ "$REMAINING" -gt 0 ]; then
+            echo "  (normal se forem strings/comentários não relacionados com a identidade da app — revê se o build seguinte falhar)"
+          fi
+
+      - name: Instalar apktool + build-tools (aapt2, zipalign, apksigner)
+        if: ${{ github.event.inputs.source_mode == 'decompiled' }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq apktool
+
+          # zipalign/apksigner vêm nas cmdline-tools/build-tools do Android SDK,
+          # que o runner ubuntu-latest já traz pré-instalado via ANDROID_HOME.
+          BUILD_TOOLS_DIR=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 | sort -V | tail -n1)
+          echo "BUILD_TOOLS_DIR=$BUILD_TOOLS_DIR" >> "$GITHUB_ENV"
+          echo "A usar build-tools em: $BUILD_TOOLS_DIR"
+          "$BUILD_TOOLS_DIR/apksigner" --version
+          "$BUILD_TOOLS_DIR/zipalign" 2>&1 | head -n1 || true
+
+      - name: Reconstruir APK a partir do projeto descompilado (apktool)
+        if: ${{ github.event.inputs.source_mode == 'decompiled' }}
+        run: |
+          apktool b decompiled -o app-unsigned.apk
+
+      - name: Alinhar e assinar o APK reconstruído
+        if: ${{ github.event.inputs.source_mode == 'decompiled' }}
+        run: |
+          "$BUILD_TOOLS_DIR/zipalign" -f -p 4 app-unsigned.apk app-aligned.apk
+          "$BUILD_TOOLS_DIR/apksigner" sign \
+            --ks release.keystore \
+            --ks-pass "pass:$STORE_PASS" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --key-pass "pass:$KEY_PASS" \
+            --out android-app-decompiled-release.apk \
+            app-aligned.apk
+          "$BUILD_TOOLS_DIR/apksigner" verify android-app-decompiled-release.apk && echo "✓ assinatura válida"
+
       - name: Renomear ficheiro final para o nome da app
         id: outname
         env:
@@ -522,7 +745,10 @@ jobs:
             | sed -E 's/[^a-zA-Z0-9]+/-/g; s/^-+|-+$//g')
           if [ -z "$SAFE_NAME" ]; then SAFE_NAME="app"; fi
 
-          if [ "${{ github.event.inputs.output_format }}" = "aab" ]; then
+          if [ "${{ github.event.inputs.source_mode }}" = "decompiled" ]; then
+            SRC="android-app-decompiled-release.apk"
+            OUT_NAME="$SAFE_NAME.apk"
+          elif [ "${{ github.event.inputs.output_format }}" = "aab" ]; then
             SRC="android/app/build/outputs/bundle/release/app-release.aab"
             OUT_NAME="$SAFE_NAME.aab"
           else
@@ -541,8 +767,8 @@ jobs:
           name: "${{ github.event.inputs.app_name }} — build #${{ github.run_number }}"
           body: |
             ${{ github.event.inputs.output_format == 'aab' && 'AAB (Android App Bundle)' || 'APK' }} gerado automaticamente.
-            Modo: `${{ github.event.inputs.source_mode }}`${{ github.event.inputs.source_mode == 'url' && format(' — WebView aponta para {0} (app vai buscar sempre a versão mais recente, sem precisar de rebuild)', github.event.inputs.source_url) || ' — conteúdo embutido offline no APK' }}
-            Package: `${{ github.event.inputs.package_id }}`
+            Modo: `${{ github.event.inputs.source_mode }}`${{ github.event.inputs.source_mode == 'url' && format(' — WebView aponta para {0} (app vai buscar sempre a versão mais recente, sem precisar de rebuild)', github.event.inputs.source_url) || (github.event.inputs.source_mode == 'decompiled' && ' — reconstruído com apktool a partir de projeto smali/+res/ descompilado' || ' — conteúdo embutido offline no APK') }}
+            Package: `${{ github.event.inputs.package_id }}`${{ github.event.inputs.source_mode == 'decompiled' && github.event.inputs.keep_original_package == 'sim' && ' (mantido o package original do APK descompilado, não este)' || '' }}
           files: ${{ steps.outname.outputs.out_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
