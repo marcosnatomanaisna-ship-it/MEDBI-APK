@@ -708,8 +708,20 @@ jobs:
       - name: Instalar apktool + build-tools (aapt2, zipalign, apksigner)
         if: ${{ github.event.inputs.source_mode == 'decompiled' }}
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq apktool
+          # NÃO usar "apt-get install apktool" — o pacote do Ubuntu é uma versão
+          # antiga com patches próprios ("2.7.0-dirty") com um bug conhecido: o
+          # aapt embutido nem sempre vem incluído no .jar, e o apktool cai para o
+          # aapt que encontrar no $PATH, que é incompatível ("Could not extract
+          # resource: /prebuilt/linux/aapt_64", "First type is not attr!",
+          # crash com exit code 134). Instala-se a versão oficial diretamente do
+          # GitHub, que já traz o aapt2 embutido e correto.
+          APKTOOL_VERSION="3.0.2"
+          sudo curl -sL -o /usr/local/bin/apktool \
+            https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool
+          sudo curl -sL -o /usr/local/bin/apktool.jar \
+            "https://github.com/iBotPeaches/Apktool/releases/download/v${APKTOOL_VERSION}/apktool_${APKTOOL_VERSION}.jar"
+          sudo chmod +x /usr/local/bin/apktool
+          apktool --version
 
           # zipalign/apksigner vêm nas cmdline-tools/build-tools do Android SDK,
           # que o runner ubuntu-latest já traz pré-instalado via ANDROID_HOME.
