@@ -687,13 +687,15 @@ jobs:
 
           # 2) Substituir todas as referências textuais (forma com pontos e com barras)
           #    em .smali e .xml do projeto inteiro (inclui AndroidManifest.xml e res/).
-          MATCHES=$(grep -rlZ -e "$OLD_PKG" -e "$OLD_PATH" \
-            --include='*.smali' --include='*.xml' decompiled 2>/dev/null || true)
-          if [ -n "$MATCHES" ]; then
-            echo "$MATCHES" | xargs -0 sed -i \
+          #    IMPORTANTE: a lista de ficheiros vem separada por NUL (grep -Z) e tem de
+          #    ir DIRETO para o xargs -0, sem passar por uma variável bash — capturar
+          #    NUL bytes num $(...) faz o bash descartá-los e colar os nomes de ficheiro
+          #    todos uns a seguir aos outros (foi isso que causou o erro anterior).
+          grep -rlZ -e "$OLD_PKG" -e "$OLD_PATH" \
+            --include='*.smali' --include='*.xml' decompiled 2>/dev/null \
+            | xargs -0 -r sed -i \
               -e "s#${OLD_PATH}#${NEW_PATH}#g" \
               -e "s#${OLD_PKG}#${NEW_PKG}#g"
-          fi
 
           echo "--- confirmação ---"
           grep 'package=' decompiled/AndroidManifest.xml
