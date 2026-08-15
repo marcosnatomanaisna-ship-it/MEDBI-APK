@@ -359,6 +359,8 @@ function formatSize(bytes){
 }
 
 /* ---------- helpers ---------- */
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
 function fileToBase64(file){
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -401,23 +403,60 @@ startBtn.addEventListener('click', async () => {
     const apkBase64 = await fileToBase64(pickedFile);
     addLog('a enviar para o backend…', 'wait');
 
-    const res = await fetch(API_BASE + '/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
-      body: JSON.stringify({ repo: REPO, branch: BRANCH, apkName: pickedFile.name, apkBase64, options: opts })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || ('backend recusou o pedido (' + res.status + ')'));
+    const data = await postStartWithRetry(apiKey, pickedFile.name, apkBase64, opts);
 
     currentJob = { id: data.jobId, name: pickedFile.name, opts, startedAt: Date.now() };
     addLog('job criado: ' + data.jobId, 'ok');
     pollJob();
   }catch(err){
     setStatus('erro', 'error');
-    addLog(err.message || 'falha ao contactar o backend', 'err');
+    addLog(friendlyErrorMessage(err), 'err');
     startBtn.disabled = false;
   }
 });
+
+/* Envia o apk para /start com retries automáticos em falhas de rede
+   (ex: "Failed to fetch" — comum em ligações lentas/instáveis quando o
+   apk é grande, já que viaja em base64 dentro do JSON). Não repete se o
+   backend respondeu mas recusou o pedido (401, 400, etc.) — só repete
+   quando o pedido nem chegou a ter resposta. */
+async function postStartWithRetry(apiKey, apkName, apkBase64, opts, maxAttempts){
+  maxAttempts = maxAttempts || 3;
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++){
+    if (attempt > 1){
+      addLog('ligação falhou a meio do envio — a tentar de novo (' + attempt + '/' + maxAttempts + ')…', 'wait');
+      await sleep(3000 * attempt);
+    }
+    try{
+      const res = await fetch(API_BASE + '/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+        body: JSON.stringify({ repo: REPO, branch: BRANCH, apkName, apkBase64, options: opts })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || ('backend recusou o pedido (' + res.status + ')'));
+      return data;
+    }catch(err){
+      lastErr = err;
+      // "Failed to fetch" é sempre um TypeError — o pedido nem chegou a ter
+      // resposta HTTP (rede caiu, timeout, etc). Vale a pena repetir.
+      // Qualquer outro erro (ex: o throw acima com res.error) não é de rede
+      // e não vale a pena repetir.
+      const isNetworkErr = err instanceof TypeError;
+      if (!isNetworkErr) throw err;
+    }
+  }
+  throw lastErr;
+}
+
+function friendlyErrorMessage(err){
+  const msg = (err && err.message) || String(err);
+  if (err instanceof TypeError || /failed to fetch/i.test(msg)){
+    return 'a ligação falhou a meio do envio do apk (rede lenta ou instável) — tenta de novo com Wi-Fi ou melhor sinal, e mantém o ecrã ligado durante o envio.';
+  }
+  return msg || 'falha ao contactar o backend';
+}
 
 function setStatus(text, cls){
   jobStatus.textContent = text;
@@ -475,7 +514,7 @@ async function pollJob(){
       pollTimer = setTimeout(pollJob, 3000);
     }
   }catch(err){
-    addLog(err.message, 'err');
+    addLog(friendlyErrorMessage(err), 'err');
     pollTimer = setTimeout(pollJob, 5000);
   }
 }
