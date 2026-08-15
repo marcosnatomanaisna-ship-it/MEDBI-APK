@@ -67,8 +67,18 @@ jobs:
 
       - name: Instalar apktool
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y apktool
+          # A mesma versão oficial (3.0.2, direto do GitHub) que o build-apk.yml
+          # usa para reconstruir. TÊM de ser a mesma versão dos dois lados —
+          # o "apktool.yml" gerado aqui é lido pelo apktool do lado do build, e
+          # o formato desse ficheiro mudou entre versões (v2 vs v3). Também evita
+          # o pacote antigo/com bug do Ubuntu ("apt-get install apktool").
+          APKTOOL_VERSION="3.0.2"
+          sudo curl -sL -o /usr/local/bin/apktool \
+            https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool
+          sudo curl -sL -o /usr/local/bin/apktool.jar \
+            "https://github.com/iBotPeaches/Apktool/releases/download/v${APKTOOL_VERSION}/apktool_${APKTOOL_VERSION}.jar"
+          sudo chmod +x /usr/local/bin/apktool
+          apktool --version
 
       - name: Descompilar recursos + smali (apktool)
         run: |
