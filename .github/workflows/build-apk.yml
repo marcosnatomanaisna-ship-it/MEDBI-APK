@@ -736,6 +736,30 @@ jobs:
         run: |
           apktool b decompiled -o app-unsigned.apk
 
+      - name: Diagnóstico do APK reconstruído (versão mínima, arquiteturas nativas)
+        if: ${{ github.event.inputs.source_mode == 'decompiled' }}
+        run: |
+          echo "--- AndroidManifest.xml original (decompiled/) ---"
+          grep -o '<uses-sdk[^/]*/>' decompiled/AndroidManifest.xml || echo "(sem tag uses-sdk explícita — herda do apktool.yml)"
+          echo ""
+          echo "--- apktool.yml (sdkInfo) ---"
+          grep -A5 'sdkInfo' decompiled/apktool.yml || echo "(sem sdkInfo em apktool.yml)"
+          echo ""
+          echo "--- arquiteturas nativas incluídas (pasta lib/) ---"
+          if [ -d decompiled/lib ]; then
+            find decompiled/lib -maxdepth 1 -mindepth 1 -type d -exec basename {} \;
+          else
+            echo "(sem pasta lib/ — app não tem código nativo, normal em apps WebView/Capacitor puras)"
+          fi
+          echo ""
+          echo "--- badging do .apk reconstruído (aapt2 do apktool) ---"
+          AAPT2_BIN=$(find ~/.local/share/apktool -iname 'aapt2*' -type f 2>/dev/null | head -n1)
+          if [ -n "$AAPT2_BIN" ]; then
+            "$AAPT2_BIN" dump badging app-unsigned.apk 2>/dev/null | grep -E 'sdkVersion|targetSdkVersion|native-code|package:' || true
+          else
+            echo "(não encontrei o aapt2 do apktool para inspecionar o .apk final)"
+          fi
+
       - name: Alinhar e assinar o APK reconstruído
         if: ${{ github.event.inputs.source_mode == 'decompiled' }}
         run: |
