@@ -7,7 +7,7 @@ on:
         description: "ID do job (gerado pelo backend)"
         required: true
       apk_path:
-        description: "caminho do .apk dentro do repo (ex: incoming/xxx-app.apk)"
+        description: "caminho do .apk (ou .zip com base.apk + splits) dentro do repo (ex: incoming/xxx-app.apk)"
         required: true
       want_smali:
         description: "true/false"
@@ -65,6 +65,49 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Preparar .apk único (fundir splits, se o envio for um .zip)
+        # O apktool/jadx só sabem lidar com UM .apk. Se a app foi extraída
+        # como bundle (base.apk + split_config.*.apk, comum em apps
+        # modernas da Play Store), o ficheiro enviado é um .zip com várias
+        # peças lá dentro — aqui fundimo-las num único .apk autossuficiente
+        # com o APKEditor antes de seguir para o resto do processo, que
+        # fica inalterado. Isto também resolve o erro de instalação
+        # "isSplitRequired"/"requiredSplitTypes" na origem, já que o .apk
+        # fundido deixa de depender de splits em falta.
+        run: |
+          SRC="${{ github.event.inputs.apk_path }}"
+          if [[ "$SRC" == *.zip ]]; then
+            echo "ficheiro enviado é um .zip — a extrair e a procurar splits..."
+            mkdir -p work/splits_in
+            unzip -q "$SRC" -d work/splits_in
+            APK_COUNT=$(find work/splits_in -maxdepth 2 -iname "*.apk" | wc -l)
+            echo "encontrados $APK_COUNT ficheiros .apk dentro do zip."
+            if [ "$APK_COUNT" -lt 1 ]; then
+              echo "✗ nenhum .apk encontrado dentro do .zip enviado." >&2
+              exit 1
+            fi
+            if [ "$APK_COUNT" -eq 1 ]; then
+              echo "só havia 1 .apk lá dentro — a usar diretamente, sem fundir."
+              SINGLE=$(find work/splits_in -maxdepth 2 -iname "*.apk" | head -n1)
+              echo "APK_PATH=$SINGLE" >> "$GITHUB_ENV"
+            else
+              echo "a descarregar APKEditor para fundir os splits num .apk único..."
+              APKEDITOR_URL=$(curl -s https://api.github.com/repos/REAndroid/APKEditor/releases/latest \
+                | grep "browser_download_url.*\.jar" | head -n1 | cut -d '"' -f4)
+              if [ -z "$APKEDITOR_URL" ]; then
+                echo "✗ não consegui encontrar o .jar do APKEditor na última release." >&2
+                exit 1
+              fi
+              curl -sL -o APKEditor.jar "$APKEDITOR_URL"
+              java -jar APKEditor.jar m -i work/splits_in -o work/merged.apk
+              echo "✓ splits fundidos em work/merged.apk, $(stat -c%s work/merged.apk) bytes"
+              echo "APK_PATH=work/merged.apk" >> "$GITHUB_ENV"
+            fi
+          else
+            echo "ficheiro enviado já é um .apk único — nada a fundir."
+            echo "APK_PATH=$SRC" >> "$GITHUB_ENV"
+          fi
+
       - name: Instalar apktool
         run: |
           # A mesma versão oficial (3.0.2, direto do GitHub) que o build-apk.yml
@@ -85,7 +128,7 @@ jobs:
           # corre sempre (mesmo que só se queira o java do jadx), porque é
           # também aqui que descobrimos o nome do pacote da app para filtrar
           # o ruído das bibliotecas do sistema mais à frente.
-          apktool d "${{ github.event.inputs.apk_path }}" -o work/apktool_out -f
+          apktool d "$APK_PATH" -o work/apktool_out -f
           mkdir -p work/final/manifest work/final/resources work/final/smali work/final/assets
           cp work/apktool_out/AndroidManifest.xml work/final/manifest/ 2>/dev/null || true
           [ "${{ github.event.inputs.want_resources }}" = "true" ] && cp -r work/apktool_out/res work/final/resources/ 2>/dev/null || true
@@ -159,7 +202,7 @@ jobs:
       - name: Descompilar Java aproximado (jadx)
         if: ${{ github.event.inputs.want_java == 'true' }}
         run: |
-          ./jadx_bin/bin/jadx -d work/jadx_out "${{ github.event.inputs.apk_path }}" || true
+          ./jadx_bin/bin/jadx -d work/jadx_out "$APK_PATH" || true
           mkdir -p work/final/java
           cp -r work/jadx_out/sources/* work/final/java/ 2>/dev/null || true
 
