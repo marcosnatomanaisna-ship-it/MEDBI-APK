@@ -213,9 +213,9 @@
 
     <div class="drop" id="drop">
       <div class="icon">⇩</div>
-      <div class="label">Arrasta o .apk para aqui ou toca para escolher</div>
-      <div class="sub">ficheiro único, até 150&nbsp;MB</div>
-      <input type="file" id="fileInput" accept=".apk">
+      <div class="label">Arrasta o .apk (ou .zip com splits) para aqui ou toca para escolher</div>
+      <div class="sub">ficheiro único, até 150&nbsp;MB — .apk normal, ou .zip com base.apk + split_config*.apk</div>
+      <input type="file" id="fileInput" accept=".apk,.zip">
     </div>
 
     <div class="file-picked" id="filePicked">
@@ -409,8 +409,11 @@ const APK_SOFT_WARN_BYTES = 100 * 1024 * 1024; // 100MB
 const APK_HARD_LIMIT_BYTES = 145 * 1024 * 1024; // ~145MB
 
 function pickFile(f){
-  if (!f.name.toLowerCase().endsWith('.apk')){
-    alert('Escolhe um ficheiro .apk');
+  const lower = f.name.toLowerCase();
+  const isApk = lower.endsWith('.apk');
+  const isZip = lower.endsWith('.zip');
+  if (!isApk && !isZip){
+    alert('Escolhe um ficheiro .apk, ou um .zip com base.apk + splits (se a app foi extraída em bundle).');
     return;
   }
   if (f.size > APK_HARD_LIMIT_BYTES){
