@@ -1,95 +1,487 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt">
 <head>
-  <meta charset="utf-8">
-  <title>MEDBI 2048</title>
+<meta charset="utf-8">
+<title>MEDBI Briscola</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0a4d63">
+<style>
+  :root {
+    --blue-dark: #0a4d63;
+    --blue: #0f6e8c;
+    --teal: #1fb6a8;
+    --mint: #7ee8d3;
+    --felt: #0c3b2e;
+    --felt-light: #145446;
+    --card-bg: #fdfaf3;
+    --ink: #eaf6f6;
+    --ink-soft: #b7cdd4;
+    --red-suit: #c0392b;
+    --black-suit: #1b1b1b;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    background: radial-gradient(ellipse at top, var(--felt-light) 0%, var(--felt) 70%);
+    color: var(--ink);
+    -webkit-user-select: none; user-select: none;
+    overscroll-behavior: none;
+  }
+  #app { display: flex; flex-direction: column; height: 100%; min-height: 100vh; padding: 10px; }
 
-  <link href="style/main.css" rel="stylesheet" type="text/css">
-  <link rel="shortcut icon" href="favicon.ico">
-  <link rel="apple-touch-icon" href="meta/apple-touch-icon.png">
-  <link rel="apple-touch-startup-image" href="meta/apple-touch-startup-image-640x1096.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)"> <!-- iPhone 5+ -->
-  <link rel="apple-touch-startup-image" href="meta/apple-touch-startup-image-640x920.png"  media="(device-width: 320px) and (device-height: 480px) and (-webkit-device-pixel-ratio: 2)"> <!-- iPhone, retina -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  /* Cabeçalho */
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 10px; }
+  .title { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--mint); }
+  .scores { display: flex; gap: 8px; }
+  .score-pill {
+    background: rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 6px 12px; text-align: center;
+    min-width: 62px; }
+  .score-pill .label { font-size: 10px; text-transform: uppercase; color: var(--ink-soft); letter-spacing: 0.5px; }
+  .score-pill .value { font-size: 18px; font-weight: 700; }
 
-  <meta name="HandheldFriendly" content="True">
-  <meta name="MobileOptimized" content="320">
-  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0, maximum-scale=1, user-scalable=no, minimal-ui">
+  /* Zona do adversário */
+  .opponent-zone { display: flex; justify-content: center; gap: -20px; padding: 6px 0; min-height: 90px; align-items: center; }
+  .opponent-zone .card { margin: 0 -14px; }
+
+  /* Mesa central */
+  .table-zone {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    gap: 24px; position: relative; min-height: 140px; }
+  .trick-slot {
+    width: 70px; height: 100px; border: 2px dashed rgba(255,255,255,0.15);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+
+  /* Baralho e trunfo */
+  .deck-zone {
+    position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .deck-count { font-size: 12px; color: var(--ink-soft); text-align: center; }
+  .trump-card { transform: rotate(90deg); margin-top: 18px; }
+
+  /* Cartas */
+  .card {
+    width: 64px; height: 92px; border-radius: 8px;
+    background: var(--card-bg);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 4px 6px; position: relative;
+    transition: transform 140ms ease, box-shadow 140ms ease;
+    flex-shrink: 0; }
+  .card.back {
+    background: linear-gradient(135deg, var(--blue-dark), var(--teal));
+    background-size: 200% 200%;
+  }
+  .card.back:after {
+    content: "MB";
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px; color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+  }
+  .card .corner { font-weight: 800; font-size: 15px; line-height: 1; }
+  .card .corner.bottom { align-self: flex-end; transform: rotate(180deg); }
+  .card .suit-big { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 30px; }
+  .card.red .corner, .card.red .suit-big { color: var(--red-suit); }
+  .card.black .corner, .card.black .suit-big { color: var(--black-suit); }
+
+  .card.playable { cursor: pointer; }
+  .card.playable:active { transform: translateY(-8px); }
+  .card.in-hand:hover { transform: translateY(-6px); box-shadow: 0 8px 16px rgba(0,0,0,0.45); }
+
+  /* Mão do jogador */
+  .hand-zone { display: flex; justify-content: center; gap: 8px; padding: 10px 0 4px; min-height: 100px; }
+
+  /* Mensagens / overlay */
+  .message-bar {
+    text-align: center; font-size: 14px; color: var(--mint);
+    min-height: 20px; padding: 2px 0; font-weight: 600; }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(6,34,41,0.92);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px; backdrop-filter: blur(4px); }
+  .overlay.hidden { display: none; }
+  .overlay-card {
+    background: var(--felt); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 28px 24px; max-width: 380px; width: 100%;
+    text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+  .overlay-card h2 { margin: 0 0 10px; font-size: 26px; color: var(--ink); }
+  .overlay-card p { color: var(--ink-soft); font-size: 15px; line-height: 1.5; margin: 0 0 16px; }
+  .btn {
+    display: inline-block; background: var(--teal); color: #06322c;
+    font-weight: 700; border: none; border-radius: 8px;
+    padding: 12px 26px; font-size: 15px; cursor: pointer; margin: 4px;
+    transition: transform 120ms ease, background 120ms ease; }
+  .btn:hover { background: var(--mint); transform: translateY(-1px); }
+  .btn.secondary { background: rgba(255,255,255,0.1); color: var(--ink); }
+  .rules-list { text-align: left; font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+  .rules-list b { color: var(--mint); }
+
+  .footer-actions { text-align: center; padding: 6px 0; }
+  .link-btn { background: none; border: none; color: var(--ink-soft); font-size: 12px; text-decoration: underline; cursor: pointer; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="heading">
-      <h1 class="title">MEDBI 2048</h1>
-      <div class="scores-container">
-        <div class="score-container">0</div>
-        <div class="best-container">0</div>
-      </div>
+<div id="app">
+
+  <div class="header">
+    <div class="title">MEDBI Briscola</div>
+    <div class="scores">
+      <div class="score-pill"><div class="label">Tu</div><div class="value" id="player-score">0</div></div>
+      <div class="score-pill"><div class="label">PC</div><div class="value" id="ai-score">0</div></div>
     </div>
-
-    <div class="above-game">
-      <p class="game-intro">Join the numbers and get to the <strong>2048 tile!</strong></p>
-      <a class="restart-button">New Game</a>
-    </div>
-
-    <div class="game-container">
-      <div class="game-message">
-        <p></p>
-        <div class="lower">
-	        <a class="keep-playing-button">Keep going</a>
-          <a class="retry-button">Try again</a>
-        </div>
-      </div>
-
-      <div class="grid-container">
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-        </div>
-      </div>
-
-      <div class="tile-container">
-
-      </div>
-    </div>
-
-    <p class="game-explanation">
-      <strong class="important">How to play:</strong> Use your <strong>arrow keys</strong> to move the tiles. When two tiles with the same number touch, they <strong>merge into one!</strong>
-    </p>
-    <hr>
-    <p>
-    Created by <a href="http://gabrielecirulli.com" target="_blank">Gabriele Cirulli</a> (MIT License). MEDBI edition.
-    </p>
   </div>
 
-  <script src="js/bind_polyfill.js"></script>
-  <script src="js/classlist_polyfill.js"></script>
-  <script src="js/animframe_polyfill.js"></script>
-  <script src="js/keyboard_input_manager.js"></script>
-  <script src="js/html_actuator.js"></script>
-  <script src="js/grid.js"></script>
-  <script src="js/tile.js"></script>
-  <script src="js/local_storage_manager.js"></script>
-  <script src="js/game_manager.js"></script>
-  <script src="js/application.js"></script>
+  <div class="opponent-zone" id="opponent-zone"></div>
+
+  <div class="table-zone">
+    <div class="deck-zone">
+      <div class="trump-card" id="trump-card"></div>
+      <div class="deck-count" id="deck-count">40</div>
+    </div>
+    <div class="trick-slot" id="ai-trick-slot"></div>
+    <div class="trick-slot" id="player-trick-slot"></div>
+  </div>
+
+  <div class="message-bar" id="message-bar">A começar...</div>
+
+  <div class="hand-zone" id="hand-zone"></div>
+
+  <div class="footer-actions">
+    <button class="link-btn" id="show-rules">Ver regras</button>
+  </div>
+
+</div>
+
+<div class="overlay" id="rules-overlay">
+  <div class="overlay-card">
+    <h2>Como jogar Briscola</h2>
+    <div class="rules-list">
+      <p><b>Objetivo:</b> Fazer mais de 60 dos 120 pontos totais do baralho.</p>
+      <p><b>Força das cartas</b> (da mais forte à mais fraca):<br>
+      Ás &gt; 3 &gt; Rei &gt; Dama &gt; Valete &gt; 7 &gt; 6 &gt; 5 &gt; 4 &gt; 2</p>
+      <p><b>Pontos por carta:</b> Ás = 11, 3 = 10, Rei = 4, Dama = 3, Valete = 2, restantes = 0</p>
+      <p><b>Trunfo:</b> o naipe virado ao lado do baralho. Uma carta de trunfo vence sempre uma carta de outro naipe.</p>
+      <p><b>Jogada:</b> Quem começa joga uma carta; o outro responde. Se seguir o mesmo naipe, ganha a carta mais forte desse naipe. Se jogar trunfo, ganha o trunfo (a não ser que o outro jogue um trunfo mais forte).</p>
+      <p>Quem ganha a vaza fica com os pontos e joga primeiro na vaza seguinte. Depois de cada vaza, ambos compram uma carta nova do baralho (quem ganhou compra primeiro).</p>
+    </div>
+    <a class="btn" id="close-rules">Entendi, jogar!</a>
+  </div>
+</div>
+
+<div class="overlay hidden" id="end-overlay">
+  <div class="overlay-card">
+    <h2 id="end-title">Fim de jogo</h2>
+    <p id="end-message"></p>
+    <a class="btn" id="play-again">Jogar novamente</a>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Configuração do baralho ---------- */
+var SUITS = [
+  { key: "ouros",   symbol: "♦", color: "red" },
+  { key: "copas",   symbol: "♥", color: "red" },
+  { key: "espadas", symbol: "♠", color: "black" },
+  { key: "paus",    symbol: "♣", color: "black" }
+];
+// ordem de força (índice = força, maior índice = mais forte)
+var RANK_ORDER = ["2","4","5","6","7","J","Q","K","3","A"];
+var RANK_LABEL = { "A":"A", "2":"2", "3":"3", "4":"4", "5":"5", "6":"6", "7":"7", "J":"V", "Q":"D", "K":"R" };
+var RANK_POINTS = { "A":11, "2":0, "3":10, "4":0, "5":0, "6":0, "7":0, "J":2, "Q":3, "K":4 };
+
+function buildDeck(){
+  var deck = [];
+  SUITS.forEach(function(suit){
+    RANK_ORDER.forEach(function(rank){
+      deck.push({ suit: suit.key, symbol: suit.symbol, color: suit.color, rank: rank,
+                  label: RANK_LABEL[rank], points: RANK_POINTS[rank],
+                  strength: RANK_ORDER.indexOf(rank) });
+    });
+  });
+  return deck;
+}
+
+function shuffle(arr){
+  for (var i = arr.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
+/* ---------- Estado do jogo ---------- */
+var state = {};
+
+function newGame(){
+  var deck = shuffle(buildDeck());
+  var trumpCard = deck[deck.length - 1]; // fica visível, retirada por último
+  var trumpSuit = trumpCard.suit;
+
+  var playerHand = [deck.pop(), deck.pop(), deck.pop()];
+  var aiHand = [deck.pop(), deck.pop(), deck.pop()];
+
+  state = {
+    deck: deck,
+    trumpCard: trumpCard,
+    trumpSuit: trumpSuit,
+    playerHand: playerHand,
+    aiHand: aiHand,
+    playerScore: 0,
+    aiScore: 0,
+    table: { player: null, ai: null },
+    leader: "player", // quem joga primeiro nesta vaza
+    turn: "player",
+    gameOver: false,
+    busy: false
+  };
+
+  render();
+  setMessage("É a tua vez. Escolhe uma carta.");
+}
+
+/* ---------- Lógica de jogo ---------- */
+function cardBeats(cardA, cardB, trumpSuit, leadSuit){
+  // devolve true se cardA vence cardB (cardA jogada depois)
+  var aTrump = cardA.suit === trumpSuit;
+  var bTrump = cardB.suit === trumpSuit;
+  if (aTrump && !bTrump) return true;
+  if (!aTrump && bTrump) return false;
+  if (aTrump && bTrump) return cardA.strength > cardB.strength;
+  // nenhuma é trunfo
+  if (cardA.suit === leadSuit && cardB.suit === leadSuit) return cardA.strength > cardB.strength;
+  if (cardA.suit === leadSuit) return true;
+  return false;
+}
+
+function aiChooseCard(){
+  var hand = state.aiHand;
+  if (state.leader === "ai"){
+    // AI lidera: joga a carta mais fraca que não seja trunfo forte, se possível
+    var nonTrump = hand.filter(function(c){ return c.suit !== state.trumpSuit; });
+    var pool = nonTrump.length ? nonTrump : hand;
+    pool = pool.slice().sort(function(a,b){ return a.points - b.points || a.strength - b.strength; });
+    return pool[0];
+  } else {
+    // AI responde à carta do jogador
+    var leadCard = state.table.player;
+    var winning = hand.filter(function(c){ return cardBeats(c, leadCard, state.trumpSuit, leadCard.suit); });
+    if (winning.length){
+      // ganha com a carta mais barata possível (não desperdiçar Ás/3)
+      winning.sort(function(a,b){ return a.points - b.points || a.strength - b.strength; });
+      // só vale a pena "gastar" trunfo forte se a vaza tiver pontos suficientes
+      var trickValue = leadCard.points;
+      var cheapest = winning[0];
+      if (cheapest.points > 6 && trickValue < 5){
+        // carta demasiado valiosa para uma vaza pobre: tenta perder barato em vez disso
+        var losing = hand.filter(function(c){ return !cardBeats(c, leadCard, state.trumpSuit, leadCard.suit); });
+        if (losing.length){
+          losing.sort(function(a,b){ return a.points - b.points; });
+          return losing[0];
+        }
+      }
+      return cheapest;
+    } else {
+      // não pode ganhar: descarta a carta de menor valor
+      var sorted = hand.slice().sort(function(a,b){ return a.points - b.points; });
+      return sorted[0];
+    }
+  }
+}
+
+function removeFromHand(hand, card){
+  var idx = hand.indexOf(card);
+  if (idx !== -1) hand.splice(idx, 1);
+}
+
+function drawCards(firstPlayer){
+  // quem ganhou a vaza compra primeiro
+  var order = firstPlayer === "player" ? ["playerHand","aiHand"] : ["aiHand","playerHand"];
+  order.forEach(function(handKey){
+    if (state.deck.length > 0){
+      state[handKey].push(state.deck.pop());
+    } else if (state.trumpCard){
+      state[handKey].push(state.trumpCard);
+      state.trumpCard = null;
+    }
+  });
+}
+
+function resolveTrick(){
+  var playerCard = state.table.player;
+  var aiCard = state.table.ai;
+  var leadSuit = state.leader === "player" ? playerCard.suit : aiCard.suit;
+  var playerWins = state.leader === "player"
+    ? !cardBeats(aiCard, playerCard, state.trumpSuit, leadSuit)
+    : cardBeats(playerCard, aiCard, state.trumpSuit, leadSuit);
+
+  var points = playerCard.points + aiCard.points;
+  var winner = playerWins ? "player" : "ai";
+
+  if (winner === "player") state.playerScore += points;
+  else state.aiScore += points;
+
+  setMessage((winner === "player" ? "Ganhaste" : "O PC ganhou") + " a vaza (+" + points + " pontos).");
+
+  state.table = { player: null, ai: null };
+  drawCards(winner);
+  state.leader = winner;
+  state.turn = winner;
+
+  render();
+
+  if (state.playerHand.length === 0 && state.deck.length === 0 && !state.trumpCard){
+    setTimeout(endGame, 500);
+    return;
+  }
+
+  if (state.turn === "ai"){
+    setTimeout(aiPlay, 700);
+  } else {
+    setMessage("É a tua vez.");
+  }
+}
+
+function playerPlay(card){
+  if (state.busy || state.gameOver || state.turn !== "player") return;
+  state.busy = true;
+  removeFromHand(state.playerHand, card);
+  state.table.player = card;
+  render();
+
+  if (state.leader === "player"){
+    state.turn = "ai";
+    render();
+    setTimeout(aiPlay, 700);
+  } else {
+    state.busy = false;
+    setTimeout(resolveTrick, 400);
+  }
+}
+
+function aiPlay(){
+  if (state.gameOver) return;
+  var card = aiChooseCard();
+  removeFromHand(state.aiHand, card);
+  state.table.ai = card;
+  render();
+
+  if (state.leader === "ai"){
+    state.turn = "player";
+    state.busy = false;
+    render();
+    setMessage("É a tua vez.");
+  } else {
+    setTimeout(resolveTrick, 400);
+  }
+}
+
+function endGame(){
+  state.gameOver = true;
+  var title, msg;
+  if (state.playerScore > 60){
+    title = "Ganhaste! 🎉";
+    msg = "Fizeste " + state.playerScore + " pontos contra " + state.aiScore + " do computador.";
+  } else if (state.aiScore > 60){
+    title = "Perdeste";
+    msg = "O computador fez " + state.aiScore + " pontos contra os teus " + state.playerScore + ".";
+  } else {
+    title = "Empate";
+    msg = "Ambos ficaram com 60 pontos.";
+  }
+  document.getElementById("end-title").textContent = title;
+  document.getElementById("end-message").textContent = msg;
+  document.getElementById("end-overlay").classList.remove("hidden");
+}
+
+/* ---------- Renderização ---------- */
+function setMessage(text){
+  document.getElementById("message-bar").textContent = text;
+}
+
+function cardEl(card, opts){
+  opts = opts || {};
+  var el = document.createElement("div");
+  el.className = "card " + (card ? card.color : "back");
+  if (opts.playable) el.className += " playable in-hand";
+  if (card){
+    el.innerHTML =
+      '<div class="corner">' + card.label + '<br>' + card.symbol + '</div>' +
+      '<div class="suit-big">' + card.symbol + '</div>' +
+      '<div class="corner bottom">' + card.label + '<br>' + card.symbol + '</div>';
+  }
+  return el;
+}
+
+function render(){
+  // pontuações
+  document.getElementById("player-score").textContent = state.playerScore;
+  document.getElementById("ai-score").textContent = state.aiScore;
+
+  // adversário (verso das cartas)
+  var oppZone = document.getElementById("opponent-zone");
+  oppZone.innerHTML = "";
+  state.aiHand.forEach(function(){
+    oppZone.appendChild(cardEl(null));
+  });
+
+  // trunfo
+  var trumpZone = document.getElementById("trump-card");
+  trumpZone.innerHTML = "";
+  if (state.trumpCard){
+    trumpZone.appendChild(cardEl(state.trumpCard));
+  }
+  document.getElementById("deck-count").textContent = state.deck.length + (state.trumpCard ? 1 : 0);
+
+  // mesa
+  var aiSlot = document.getElementById("ai-trick-slot");
+  var playerSlot = document.getElementById("player-trick-slot");
+  aiSlot.innerHTML = ""; playerSlot.innerHTML = "";
+  if (state.table.ai) aiSlot.appendChild(cardEl(state.table.ai));
+  if (state.table.player) playerSlot.appendChild(cardEl(state.table.player));
+
+  // mão do jogador
+  var handZone = document.getElementById("hand-zone");
+  handZone.innerHTML = "";
+  state.playerHand.forEach(function(card){
+    var el = cardEl(card, { playable: state.turn === "player" && !state.busy && !state.gameOver });
+    el.addEventListener("click", function(){ playerPlay(card); });
+    handZone.appendChild(el);
+  });
+}
+
+/* ---------- Eventos de UI ---------- */
+document.getElementById("show-rules").addEventListener("click", function(){
+  document.getElementById("rules-overlay").classList.remove("hidden");
+});
+document.getElementById("close-rules").addEventListener("click", function(){
+  document.getElementById("rules-overlay").classList.add("hidden");
+});
+document.getElementById("play-again").addEventListener("click", function(){
+  document.getElementById("end-overlay").classList.add("hidden");
+  newGame();
+});
+
+/* ---------- Arranque ---------- */
+var seenRules = false;
+try { seenRules = localStorage.getItem("medbiBriscola.rulesSeen") === "1"; } catch(e){}
+if (seenRules){
+  document.getElementById("rules-overlay").classList.add("hidden");
+}
+document.getElementById("close-rules").addEventListener("click", function(){
+  try { localStorage.setItem("medbiBriscola.rulesSeen", "1"); } catch(e){}
+});
+
+newGame();
+
+})();
+</script>
 </body>
 </html>
