@@ -346,6 +346,13 @@ jobs:
                   // ficheiros no telemóvel (exportar Word, PDF, imagens, etc.).
                   webView.addJavascriptInterface(new DownloadBridge(this), "AndroidDownload");
 
+                  // Ponte JS -> Android: partilha nativa (Intent.ACTION_SEND).
+                  // A WebView do Android não implementa navigator.share/canShare
+                  // (isso só existe no Chrome normal) — sem esta ponte, o botão
+                  // "Partilhar" cai sempre no fallback de copiar para a área de
+                  // transferência dentro do APK.
+                  webView.addJavascriptInterface(new ShareBridge(this), "AndroidShare");
+
                   // Corre ANTES do JS da própria página (document-start), para
                   // apanhar o Blob e o nome real do ficheiro (atributo "download"
                   // do <a>) logo na origem — assim o ficheiro guardado fica com o
@@ -515,6 +522,71 @@ jobs:
                           } catch (Exception e) {
                               Toast.makeText(activity, "Erro ao guardar ficheiro: " + e.getMessage(), Toast.LENGTH_LONG).show();
                           }
+                      });
+                  }
+              }
+
+              public class ShareBridge {
+                  private final MainActivity activity;
+                  ShareBridge(MainActivity activity) { this.activity = activity; }
+
+                  // Recebe um PNG em base64 (o cartão de resultado gerado em canvas)
+                  // + o texto a acompanhar, grava-o em MediaStore.Images (já dá um
+                  // content:// URI utilizável por outras apps, sem precisar de
+                  // FileProvider) e abre o seletor de partilha nativo do Android.
+                  @JavascriptInterface
+                  public void shareImage(String base64, String filename, String text) {
+                      activity.runOnUiThread(() -> {
+                          try {
+                              byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+                              Uri savedUri = null;
+                              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                  ContentValues values = new ContentValues();
+                                  values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+                                  values.put(MediaStore.MediaColumns.MIME_TYPE, "image/png");
+                                  values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
+                                  Uri uri = activity.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                                  if (uri != null) {
+                                      OutputStream out = activity.getContentResolver().openOutputStream(uri);
+                                      if (out != null) { out.write(bytes); out.close(); }
+                                      savedUri = uri;
+                                  }
+                              } else {
+                                  File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+                                  File file = new File(dir, filename);
+                                  FileOutputStream fos = new FileOutputStream(file);
+                                  fos.write(bytes);
+                                  fos.close();
+                                  activity.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)));
+                                  savedUri = Uri.fromFile(file);
+                              }
+
+                              if (savedUri != null) {
+                                  Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                                  shareIntent.setType("image/png");
+                                  shareIntent.putExtra(Intent.EXTRA_STREAM, savedUri);
+                                  if (text != null && !text.isEmpty()) {
+                                      shareIntent.putExtra(Intent.EXTRA_TEXT, text);
+                                  }
+                                  shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                  activity.startActivity(Intent.createChooser(shareIntent, "Partilhar"));
+                              } else {
+                                  Toast.makeText(activity, "Erro ao preparar imagem para partilhar.", Toast.LENGTH_LONG).show();
+                              }
+                          } catch (Exception e) {
+                              Toast.makeText(activity, "Erro ao partilhar: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                          }
+                      });
+                  }
+
+                  // Fallback: partilha só texto (sem imagem).
+                  @JavascriptInterface
+                  public void shareText(String text) {
+                      activity.runOnUiThread(() -> {
+                          Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                          shareIntent.setType("text/plain");
+                          shareIntent.putExtra(Intent.EXTRA_TEXT, text);
+                          activity.startActivity(Intent.createChooser(shareIntent, "Partilhar"));
                       });
                   }
               }
