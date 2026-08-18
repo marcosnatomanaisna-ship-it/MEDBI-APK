@@ -406,6 +406,10 @@
       </div>
     </div>
 
+    <label>URL scheme (deep link) <span class="fixed-tag">opcional</span></label>
+    <input type="text" id="urlScheme" placeholder="ex: medbimi" maxlength="30">
+    <div class="hint">Só letras/números, sem espaços nem "://". Permite à loja tentar abrir esta app diretamente se já estiver instalada, em vez de só descarregar de novo. Deixa vazio para não ativar isto.</div>
+
     <label>Formato de saída</label>
     <div class="mode-tabs" id="formatTabs">
       <div class="mode-tab active" data-format="apk">APK <span style="opacity:.7;">(instalar direto)</span></div>
@@ -780,6 +784,7 @@ async function performBuild(){
   const repo = $('repo').value.trim();
   const appName = $('appName').value.trim();
   const packageId = $('packageId').value.trim();
+  const urlScheme = $('urlScheme').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
   const backendUrl = $('backendUrl').value.trim().replace(/\/$/,'');
   const mode = document.querySelector('#sourceModeTabs .mode-tab.active').dataset.mode;
   const sourceUrl = $('sourceUrl').value.trim();
@@ -844,7 +849,8 @@ async function performBuild(){
         liveUrl: mode==='url' ? sourceUrl : undefined,
         files, iconBase64,
         removeIcon: iconExplicitlyRemoved && !iconBase64,
-        splashColor: getSplashColor()
+        splashColor: getSplashColor(),
+        urlScheme // '' | 'medbimi' — o backend passa isto ao workflow como input "url_scheme"
       })
     });
     if(!startRes.ok){
@@ -887,6 +893,7 @@ async function performBuild(){
           source: mode==='url' ? sourceUrl : (mode==='file' ? (selectedFile && selectedFile.name) : (selectedZip && selectedZip.name)),
           downloadUrl: data.downloadUrl,
           splashColor: getSplashColor(),
+          urlScheme,
           date: new Date().toISOString()
         });
       } else if(data.status === 'error'){
@@ -999,6 +1006,7 @@ function escapeHtml(s){
 function reconfigureFrom(entry){
   $('appName').value = entry.name || '';
   $('packageId').value = entry.packageId || '';
+  $('urlScheme').value = entry.urlScheme || '';
   document.querySelectorAll('#sourceModeTabs .mode-tab').forEach(t=>{
     t.classList.toggle('active', t.dataset.mode === entry.mode);
   });
