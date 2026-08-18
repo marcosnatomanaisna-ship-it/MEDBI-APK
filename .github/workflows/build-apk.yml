@@ -46,6 +46,10 @@ on:
         description: 'Cor de fundo do splash screen (hex, ex: #FDE2DD)'
         required: false
         default: '#FDE2DD'
+      url_scheme:
+        description: 'Esquema de URL próprio da app para deep link (ex: medbimi). Deixa vazio para não registar. Só letras/números, minúsculas.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -238,6 +242,49 @@ jobs:
           sed -i 's#<application#<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />\n    <application#' "$MANIFEST"
           echo "--- AndroidManifest.xml ---"
           cat "$MANIFEST"
+
+      - name: "Registar URL scheme personalizado (deep link — permite à loja tentar abrir a app instalada)"
+        # Adiciona um 2º <intent-filter> à MainActivity, com android:scheme="<url_scheme>".
+        # Isto NÃO substitui o intent-filter LAUNCHER (o que faz a app abrir ao tocar
+        # no ícone) — fica a par dele. Com isto, um link tipo "medbimi://open" ou
+        # "intent://open#Intent;scheme=medbimi;package=...;end" no browser da loja
+        # abre esta app diretamente, se estiver instalada; se não estiver, o Android
+        # não tem ninguém a responder a esse esquema e o link simplesmente falha —
+        # é essa falha (deteção por timeout) que a loja usa para saber "não está instalada".
+        if: ${{ github.event.inputs.source_mode != 'decompiled' && github.event.inputs.url_scheme != '' }}
+        env:
+          URL_SCHEME: ${{ github.event.inputs.url_scheme }}
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          SCHEME=$(echo "$URL_SCHEME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
+          if [ -z "$SCHEME" ]; then
+            echo "⚠ url_scheme ficou vazio depois de limpar caracteres inválidos (só letras/números são permitidos) — a saltar este passo."
+          elif ! grep -q '</intent-filter>' "$MANIFEST"; then
+            echo "✗ não encontrei </intent-filter> no AndroidManifest.xml — scheme não registado."
+          else
+            echo "A registar o scheme: ${SCHEME}://"
+            # Insere um 2º <intent-filter> logo a seguir ao PRIMEIRO </intent-filter>
+            # encontrado (o do LAUNCHER, dentro da MainActivity) — por isso o "done"
+            # garante que só mexe nessa primeira ocorrência, mesmo que existam outras
+            # activities com intent-filter mais abaixo no manifesto.
+            awk -v scheme="$SCHEME" '
+              {
+                print $0
+                if (!done && $0 ~ /<\/intent-filter>/) {
+                  print "        <intent-filter>"
+                  print "            <action android:name=\"android.intent.action.VIEW\" />"
+                  print "            <category android:name=\"android.intent.category.DEFAULT\" />"
+                  print "            <category android:name=\"android.intent.category.BROWSABLE\" />"
+                  print "            <data android:scheme=\"" scheme "\" />"
+                  print "        </intent-filter>"
+                  done=1
+                }
+              }
+            ' "$MANIFEST" > "$MANIFEST.tmp" && mv "$MANIFEST.tmp" "$MANIFEST"
+            echo "✓ scheme \"${SCHEME}://\" registado."
+            echo "--- AndroidManifest.xml (depois de registar o scheme) ---"
+            cat "$MANIFEST"
+          fi
 
       - name: Configurar botão "Voltar" e saída da app
         # Substitui o MainActivity.java gerado pelo "cap add android" (que por
@@ -852,6 +899,7 @@ jobs:
             ${{ github.event.inputs.output_format == 'aab' && 'AAB (Android App Bundle)' || 'APK' }} gerado automaticamente.
             Modo: `${{ github.event.inputs.source_mode }}`${{ github.event.inputs.source_mode == 'url' && format(' — WebView aponta para {0} (app vai buscar sempre a versão mais recente, sem precisar de rebuild)', github.event.inputs.source_url) || (github.event.inputs.source_mode == 'decompiled' && ' — reconstruído com apktool a partir de projeto smali/+res/ descompilado' || ' — conteúdo embutido offline no APK') }}
             Package: `${{ github.event.inputs.package_id }}`${{ github.event.inputs.source_mode == 'decompiled' && github.event.inputs.keep_original_package == 'sim' && ' (mantido o package original do APK descompilado, não este)' || '' }}
+            ${{ github.event.inputs.url_scheme != '' && format('URL scheme registado: `{0}://` (para deep link/"Abrir" a partir da loja)', github.event.inputs.url_scheme) || '' }}
           files: ${{ steps.outname.outputs.out_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
