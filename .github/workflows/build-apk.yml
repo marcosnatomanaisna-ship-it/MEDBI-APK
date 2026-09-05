@@ -353,6 +353,13 @@ jobs:
                   // transferência dentro do APK.
                   webView.addJavascriptInterface(new ShareBridge(this), "AndroidShare");
 
+                  // Ponte JS -> Android: grava um ficheiro de fonte (.ttf/.otf)
+                  // numa pasta pública "Fonts/" na memória do telemóvel, para
+                  // apps como o WPS Office a encontrarem. Existe à parte do
+                  // AndroidDownload porque este vai para Downloads/ (via
+                  // RELATIVE_PATH fixo) e não seria lido pelo WPS.
+                  webView.addJavascriptInterface(new FontInstallBridge(this), "AndroidFontInstall");
+
                   // Corre ANTES do JS da própria página (document-start), para
                   // apanhar o Blob e o nome real do ficheiro (atributo "download"
                   // do <a>) logo na origem — assim o ficheiro guardado fica com o
@@ -521,6 +528,59 @@ jobs:
                               }
                           } catch (Exception e) {
                               Toast.makeText(activity, "Erro ao guardar ficheiro: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                          }
+                      });
+                  }
+              }
+
+              // Grava um ficheiro de fonte numa pasta pública "Fonts/" (raiz da
+              // memória partilhada, não Downloads/) — é aí que apps como o WPS
+              // Office e leitores de fontes Android costumam procurar fontes
+              // instaladas manualmente. Em API 29+ (scoped storage) usa
+              // MediaStore.Files com RELATIVE_PATH="Fonts/", que cria essa pasta
+              // na raiz se não existir, sem precisar de nenhuma permissão de
+              // armazenamento (a app só precisa de permissão para os ficheiros
+              // que ela própria cria via MediaStore). Em API < 29 escreve
+              // diretamente no caminho, tal como o DownloadBridge.
+              public class FontInstallBridge {
+                  private final MainActivity activity;
+                  FontInstallBridge(MainActivity activity) { this.activity = activity; }
+
+                  @JavascriptInterface
+                  public void saveFont(String base64, String filename) {
+                      activity.runOnUiThread(() -> {
+                          try {
+                              byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+                              Uri savedUri = null;
+                              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                  ContentValues values = new ContentValues();
+                                  values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+                                  values.put(MediaStore.MediaColumns.MIME_TYPE, "font/ttf");
+                                  values.put(MediaStore.MediaColumns.RELATIVE_PATH, "Fonts/");
+                                  Uri uri = activity.getContentResolver().insert(MediaStore.Files.getContentUri("external"), values);
+                                  if (uri != null) {
+                                      OutputStream out = activity.getContentResolver().openOutputStream(uri);
+                                      if (out != null) { out.write(bytes); out.close(); }
+                                      savedUri = uri;
+                                  }
+                              } else {
+                                  File dir = new File(Environment.getExternalStorageDirectory(), "Fonts");
+                                  if (!dir.exists()) dir.mkdirs();
+                                  File file = new File(dir, filename);
+                                  FileOutputStream fos = new FileOutputStream(file);
+                                  fos.write(bytes);
+                                  fos.close();
+                                  activity.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)));
+                                  savedUri = Uri.fromFile(file);
+                              }
+
+                              if (savedUri != null) {
+                                  Toast.makeText(activity, "Fonte gravada em Fonts/" + filename + " — reabre o WPS Office para a ver.", Toast.LENGTH_LONG).show();
+                              } else {
+                                  Toast.makeText(activity, "Erro ao gravar a fonte.", Toast.LENGTH_LONG).show();
+                              }
+                          } catch (Exception e) {
+                              Toast.makeText(activity, "Erro ao gravar a fonte: " + e.getMessage(), Toast.LENGTH_LONG).show();
                           }
                       });
                   }
