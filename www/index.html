@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{
     --paper: #F7F4EE;
@@ -20,18 +21,20 @@
     --radius: 3px;
   }
   *{ box-sizing: border-box; }
-  html,body{ margin:0; padding:0; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; overscroll-behavior:none; }
   body{
     background: var(--paper);
     color: var(--ink);
     font-family: "Source Sans 3", system-ui, sans-serif;
-    min-height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
     -webkit-font-smoothing: antialiased;
   }
   #app{
     max-width: 480px;
     margin: 0 auto;
-    min-height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -42,7 +45,8 @@
     display:flex;
     align-items:center;
     gap:12px;
-    padding: 18px 20px 14px;
+    padding: clamp(10px,2vh,18px) 20px clamp(8px,1.6vh,14px);
+    flex-shrink:0;
     border-bottom: 1px solid var(--paper-line);
   }
   .topbar .back{
@@ -71,9 +75,11 @@
   /* ---------- Conteúdo de cada ecrã ---------- */
   .screen{
     flex:1;
+    min-height:0;
     display:none;
     flex-direction: column;
-    padding: 28px 20px 32px;
+    padding: clamp(14px,3vh,28px) 20px clamp(14px,3vh,32px);
+    overflow: hidden;
     animation: fadeIn .25s ease;
   }
   .screen.active{ display:flex; }
@@ -85,39 +91,43 @@
   h1{
     font-family:"Fraunces", serif;
     font-weight: 600;
-    font-size: 1.9rem;
+    font-size: clamp(1.4rem, 5.5vh, 1.9rem);
     line-height: 1.15;
-    margin: 0 0 10px;
+    margin: 0 0 clamp(6px,1.5vh,10px);
     letter-spacing: -0.01em;
+    flex-shrink:0;
   }
   h2{
     font-family:"Fraunces", serif;
     font-weight: 600;
-    font-size: 1.4rem;
-    margin: 0 0 8px;
+    font-size: clamp(1.15rem, 4vh, 1.4rem);
+    margin: 0 0 clamp(6px,1.2vh,8px);
+    flex-shrink:0;
   }
   p.lead{
     color: var(--ink-soft);
-    font-size: 1rem;
-    line-height: 1.55;
-    margin: 0 0 26px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0 0 clamp(12px,3vh,26px);
     max-width: 40ch;
+    flex-shrink:0;
   }
 
   /* ---------- Ecrã inicial ---------- */
   .home-hero{
-    margin: 8px 0 30px;
+    margin: clamp(4px,1vh,8px) 0 clamp(14px,4vh,30px);
     border: 1px solid var(--paper-line);
     border-radius: var(--radius);
     background: white;
-    padding: 26px 22px;
+    padding: clamp(14px,3vh,26px) 22px;
     box-shadow: var(--card-shadow);
+    flex-shrink:0;
   }
   .home-hero .sample-word{
     font-family:"Fraunces", serif;
     font-style: italic;
     font-weight: 500;
-    font-size: 2.1rem;
+    font-size: clamp(1.5rem, 6vh, 2.1rem);
     color: var(--pen-blue);
     line-height: 1.3;
   }
@@ -130,8 +140,9 @@
   .action-list{
     display:flex;
     flex-direction: column;
-    gap: 10px;
+    gap: clamp(6px,1.2vh,10px);
     margin-top: auto;
+    flex-shrink:0;
   }
 
   .btn{
@@ -142,7 +153,7 @@
     font-family: inherit;
     font-size: 1rem;
     font-weight: 600;
-    padding: 15px 20px;
+    padding: clamp(10px,2vh,15px) 20px;
     border-radius: var(--radius);
     border: none;
     cursor: pointer;
@@ -158,6 +169,11 @@
     background: white;
     color: var(--ink);
     border: 1px solid var(--paper-line);
+  }
+  .btn-secondary.tool-active{
+    background: var(--pen-blue);
+    color: white;
+    border-color: var(--pen-blue);
   }
   .btn-text{
     background: transparent;
@@ -178,10 +194,11 @@
     border: 1px solid var(--paper-line);
     background: white;
     border-radius: var(--radius);
-    padding: 18px;
-    margin-bottom: 12px;
+    padding: clamp(12px,2.5vh,18px);
+    margin-bottom: clamp(8px,1.5vh,12px);
     cursor: pointer;
     box-shadow: var(--card-shadow);
+    flex-shrink:0;
   }
   .method-card:active{ background: var(--pen-blue-soft); }
   .method-icon{
@@ -205,7 +222,8 @@
 
   /* ---------- Progresso de captura ---------- */
   .progress-wrap{
-    margin-bottom: 22px;
+    margin-bottom: clamp(12px,2.5vh,22px);
+    flex-shrink:0;
   }
   .progress-track{
     height: 6px;
@@ -233,7 +251,8 @@
     gap: 8px;
     overflow-x:auto;
     padding-bottom: 4px;
-    margin-bottom: 20px;
+    margin-bottom: clamp(10px,2vh,20px);
+    flex-shrink:0;
   }
   .char-chip{
     flex-shrink:0;
@@ -258,33 +277,26 @@
 
   .capture-stage{
     flex:1;
+    min-height:0;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    gap: 18px;
+    gap: clamp(8px,1.8vh,18px);
+    overflow:hidden;
   }
   .current-char-badge{
     font-family:"Fraunces", serif;
-    font-size: 3.4rem;
+    font-size: clamp(2rem, 6vh, 3.4rem);
     font-weight: 600;
     color: var(--ink);
     line-height:1;
+    flex-shrink:1;
   }
-  .variant-dots{
-    display:flex;
-    gap:6px;
-  }
-  .variant-dot{
-    width:8px; height:8px;
-    border-radius:50%;
-    background: var(--paper-line);
-  }
-  .variant-dot.filled{ background: var(--pen-blue); }
-
   .canvas-box{
     width: 100%;
-    aspect-ratio: 4/3;
+    aspect-ratio: 10/9;
+    flex-shrink: 0; /* o quadro de captura nunca encolhe — tudo à volta encolhe primeiro */
     background: white;
     border: 1px dashed #C9C2B0;
     border-radius: var(--radius);
@@ -333,19 +345,25 @@
 
   .capture-controls{
     display:flex;
-    gap: 10px;
+    gap: 6px;
     width:100%;
   }
-  .capture-controls .btn{ flex:1; }
+  .capture-controls .btn{
+    flex:1;
+    padding: 8px 4px;
+    font-size: 0.78rem;
+    gap: 4px;
+  }
 
   /* ---------- Pré-visualização / geração ---------- */
   .preview-box{
     border: 1px solid var(--paper-line);
     background: white;
     border-radius: var(--radius);
-    padding: 20px;
-    margin-bottom: 20px;
+    padding: clamp(12px,2.5vh,20px);
+    margin-bottom: clamp(12px,2.5vh,20px);
     box-shadow: var(--card-shadow);
+    flex-shrink:0;
   }
   .preview-box textarea{
     width:100%;
@@ -403,7 +421,8 @@
     display:flex;
     align-items:center;
     gap: 10px;
-    margin-bottom: 14px;
+    margin-bottom: clamp(8px,1.5vh,14px);
+    flex-shrink:0;
   }
   .write-toolbar label{
     font-size: 0.78rem;
@@ -417,10 +436,11 @@
   .write-status{
     font-size: 0.78rem;
     color: var(--ink-soft);
-    margin-bottom: 12px;
+    margin-bottom: clamp(8px,1.5vh,12px);
     display:flex;
     align-items:center;
     gap: 6px;
+    flex-shrink:0;
   }
   .write-status .dot{
     width:6px; height:6px;
@@ -432,12 +452,12 @@
   .write-status.error .dot{ background: var(--seal-red); }
   .write-box{
     flex:1;
+    min-height:0;
     border: 1px solid var(--paper-line);
     background: white;
     border-radius: var(--radius);
     box-shadow: var(--card-shadow);
-    margin-bottom: 18px;
-    min-height: 220px;
+    margin-bottom: clamp(10px,2vh,18px);
     display:flex;
   }
   #writeArea{
@@ -457,7 +477,8 @@
   /* ---------- Fonte pronta ---------- */
   .done-hero{
     text-align:center;
-    padding: 30px 0 20px;
+    padding: clamp(14px,3vh,30px) 0 clamp(10px,2vh,20px);
+    flex-shrink:0;
   }
   .done-check{
     width:64px; height:64px;
@@ -474,9 +495,10 @@
     border: 1px solid var(--paper-line);
     background:white;
     border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 24px;
+    padding: clamp(10px,2vh,16px);
+    margin-bottom: clamp(14px,3vh,24px);
     box-shadow: var(--card-shadow);
+    flex-shrink:0;
   }
   .file-icon{
     width:38px; height:38px;
@@ -492,12 +514,14 @@
   .file-meta{ font-size:0.8rem; color:var(--ink-soft); }
 
   footer.dev-note{
-    margin-top: 22px;
-    padding-top: 14px;
+    margin-top: clamp(8px,2vh,22px);
+    padding-top: clamp(6px,1.4vh,14px);
     border-top: 1px dashed var(--paper-line);
     font-size: 0.78rem;
     color: #A39D8C;
     line-height:1.5;
+    flex-shrink: 3;
+    overflow: hidden;
   }
 </style>
 </head>
@@ -525,6 +549,7 @@
     <div class="action-list">
       <button class="btn btn-primary" onclick="goTo('method')">Começar a capturar a minha letra</button>
       <button class="btn btn-text" onclick="continuePreviousFont()" disabled id="continueBtn">Continuar fonte anterior</button>
+      <button class="btn btn-text" onclick="resetAllProgress()" id="resetAllBtn" style="display:none; color:var(--seal-red);">Apagar tudo e recomeçar do zero</button>
     </div>
   </div>
 
@@ -576,31 +601,26 @@
 
     <div class="capture-stage">
       <div class="current-char-badge" id="currentChar">G</div>
-      <div class="variant-dots">
-        <div class="variant-dot filled"></div>
-        <div class="variant-dot"></div>
-        <div class="variant-dot"></div>
-      </div>
       <div class="canvas-box" id="canvasBox">
         <canvas id="drawCanvas"></canvas>
       </div>
-      <div class="capture-debug" id="captureDebug">0 traços · 0 pontos</div>
       <div class="save-status" id="saveStatus"><span class="dot"></span><span id="saveStatusText">Guardado neste dispositivo</span></div>
       <div style="display:flex; align-items:center; gap:10px; width:100%; margin-top:-4px;">
         <span style="font-size:0.75rem; color:var(--ink-soft); white-space:nowrap;">Simplificação</span>
         <input type="range" id="epsilonSlider" min="0.3" max="6" step="0.1" value="1.5" style="flex:1; accent-color:var(--pen-blue);">
         <span id="epsilonValue" style="font-size:0.75rem; color:var(--ink-soft); width:26px; text-align:right;">1.5</span>
       </div>
-      <div style="display:flex; gap:14px; font-size:0.72rem; color:var(--ink-soft); margin-top:-6px;">
-        <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1C1A17;margin-right:4px;"></span>traço</span>
-        <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#A63D40;margin-right:4px;"></span>pontos RDP</span>
-        <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2B4C7E;margin-right:4px;"></span>curva final</span>
+      <div class="capture-controls" style="margin-bottom:5px;">
+        <button class="btn btn-secondary" id="penToolBtn" onclick="setEraserMode(false)">✏️ Caneta</button>
+        <button class="btn btn-secondary" id="eraserToolBtn" onclick="setEraserMode(true)">🧹 Borracha</button>
+        <button class="btn btn-secondary" onclick="undoLastStroke()">↶ Desfazer</button>
       </div>
       <div class="capture-controls">
-        <button class="btn btn-secondary" onclick="clearCanvas()">Limpar</button>
-        <button class="btn btn-primary" onclick="nextVariant()">Seguinte</button>
+        <button class="btn btn-secondary" onclick="prevChar()">Voltar</button>
+        <button class="btn btn-secondary" onclick="clearCanvas()">Limpar tudo</button>
+        <button class="btn btn-primary" onclick="nextChar()">Seguinte</button>
       </div>
-      <button class="btn btn-text" onclick="goToDoneAndGenerate()" style="margin-top:4px;">Já chega — gerar fonte com o que tenho</button>
+      <button class="btn btn-text" onclick="goToDoneAndGenerate()" style="margin-top:0; padding:6px; font-size:0.82rem;">Já chega — gerar fonte com o que tenho</button>
     </div>
   </div>
 
@@ -611,17 +631,10 @@
 
     <div class="preview-box">
       <textarea placeholder="Escreve algo para experimentar a tua letra...">A tua letra, agora digital.</textarea>
-      <div class="preview-hint">Pré-visualização com variação de carateres ativada</div>
+      <div class="preview-hint">Pré-visualização com a tua letra</div>
     </div>
 
-    <div style="border:1px solid var(--paper-line); background:white; border-radius:var(--radius); padding:4px 18px; margin-bottom:24px; box-shadow:var(--card-shadow);">
-      <div class="setting-row">
-        <div>
-          <div class="setting-label">Variação natural</div>
-          <div class="setting-desc">Alterna entre as variantes de cada letra</div>
-        </div>
-        <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
-      </div>
+    <div style="border:1px solid var(--paper-line); background:white; border-radius:var(--radius); padding:4px 18px; margin-bottom:clamp(12px,2.5vh,24px); box-shadow:var(--card-shadow); flex-shrink:0;">
       <div class="setting-row">
         <div>
           <div class="setting-label">Ligações entre letras</div>
@@ -655,7 +668,9 @@
     </div>
 
     <div class="action-list">
-      <button class="btn btn-primary" onclick="exportWriteAsImage()">Exportar como imagem (PNG)</button>
+      <button class="btn btn-primary" onclick="generateAndDownloadDocx()">Descarregar como Word (.docx)</button>
+      <div style="font-size:0.82rem; color:var(--ink-soft); margin:-8px 0 12px; line-height:1.4;">Só sai com a letra certa se a fonte "MinhaLetra" já estiver instalada no telemóvel. Sem isso, o Word abre o ficheiro na fonte normal dele.</div>
+      <button class="btn btn-secondary" onclick="exportWriteAsImage()">Exportar como imagem (PNG)</button>
       <button class="btn btn-text" onclick="goBack()">Voltar</button>
     </div>
   </div>
@@ -681,64 +696,26 @@
     <div class="action-list">
       <button class="btn btn-primary" onclick="generateAndDownloadFont()">Descarregar fonte</button>
       <button class="btn btn-secondary" onclick="goToWriteScreen()">Escrever um texto agora</button>
-      <button class="btn btn-secondary" onclick="goTo('wps')">Usar no WPS Office</button>
       <button class="btn btn-text" onclick="goTo('home')">Voltar ao início</button>
+      <button class="btn btn-text" onclick="resetAllProgress()" style="color:var(--seal-red);">Apagar tudo e recomeçar do zero</button>
     </div>
 
     <footer class="dev-note">
-      Nota de desenvolvimento: o .ttf é gerado com opentype.js a partir da 1ª variante de cada caráter capturado (cada traço vira um contorno preenchido, com a espessura do traço no canvas). As restantes variantes ficam guardadas em <code>captures</code> para a variação natural na pré-visualização — ainda por ligar ao motor de texto.
+      Nota de desenvolvimento: o .ttf é gerado com opentype.js a partir do traço capturado de cada caráter (cada traço vira um contorno preenchido, com a espessura do traço no canvas).
     </footer>
-  </div>
-
-  <!-- ===================== ECRÃ 6 — USAR NO WPS OFFICE ===================== -->
-  <div class="screen" data-screen="wps">
-    <h2>Usar a tua letra no WPS Office</h2>
-    <p class="lead">O Android não deixa uma app trocar o teclado por um .ttf qualquer — mas o WPS lê fontes que estejam numa pasta "Fonts" no telemóvel. Esta app pode gravar o ficheiro aí diretamente.</p>
-
-    <div class="file-card">
-      <div class="file-icon">TTF</div>
-      <div style="flex:1">
-        <div class="file-name">MinhaLetra.ttf</div>
-        <div class="file-meta" id="wpsFileMeta">pronto a gravar</div>
-      </div>
-    </div>
-
-    <div id="wpsPickerBlock" style="display:none">
-      <div class="action-list" style="margin-top:0">
-        <button class="btn btn-primary" id="wpsPickerBtn">Escolher a pasta "Fonts" e gravar aí</button>
-      </div>
-      <div class="write-status" id="wpsPickerStatus" style="margin-top:12px"><span class="dot"></span><span id="wpsPickerStatusText">Toca no botão para escolher a pasta uma vez — nas próximas vezes já sabemos qual é.</span></div>
-    </div>
-
-    <div style="border:1px solid var(--paper-line); background:white; border-radius:var(--radius); padding:18px; margin: 18px 0; box-shadow:var(--card-shadow);">
-      <div class="method-title" style="margin-bottom:8px;">Se o telemóvel não permitir escolher a pasta</div>
-      <div class="method-desc" style="line-height:1.6;">
-        1. Descarrega a fonte com o botão abaixo.<br>
-        2. Num gestor de ficheiros, cria (se não existir) uma pasta chamada <strong>Fonts</strong> na memória interna do telemóvel.<br>
-        3. Copia o <strong>MinhaLetra.ttf</strong> descarregado para dentro dessa pasta.<br>
-        4. Fecha o WPS Office por completo (forçar paragem) e abre-o de novo.<br>
-        5. Num documento, seleciona texto → ícone de Fonte → a "MinhaLetra" deve aparecer na lista.
-      </div>
-    </div>
-
-    <div class="action-list">
-      <button class="btn btn-secondary" onclick="generateAndDownloadFont()">Descarregar fonte (.ttf)</button>
-      <button class="btn btn-text" onclick="goBack()">Voltar</button>
-    </div>
   </div>
 
 </div>
 
 <script>
-  const screens = ['home','method','capture','preview','write','done','wps'];
+  const screens = ['home','method','capture','preview','write','done'];
   const titles = {
     home: 'Minha Letra',
     method: 'Escolher método',
     capture: 'A capturar',
     preview: 'Pré-visualizar',
     write: 'Escrever',
-    done: 'Concluído',
-    wps: 'Usar no WPS'
+    done: 'Concluído'
   };
   let history = ['home'];
 
@@ -749,12 +726,12 @@
     document.getElementById('backBtn').classList.toggle('visible', screen !== 'home');
     document.getElementById('topbarStep').textContent = '';
     if(history[history.length-1] !== screen) history.push(screen);
+    if(screen === 'home'){
+      updateResetButtonVisibility();
+    }
     if(screen === 'capture'){
       // o ecrã estava display:none, por isso só agora o canvas tem dimensões reais
       requestAnimationFrame(resizeCanvasToDisplaySize);
-    }
-    if(screen === 'wps'){
-      initWpsScreen();
     }
   }
 
@@ -798,7 +775,6 @@
     { label: 'Extra',      chars: ['ñ', 'Ñ', '¿', '¡', 'º', 'ª', '%'] }
   ];
   const ALL_CHARS = CHAR_GROUPS.flatMap(g => g.chars);
-  const TOTAL_VARIANTS = 3;
 
   // Índice (em ALL_CHARS) onde cada grupo começa — usado para
   // saltar diretamente para o 1º caráter de um grupo ao tocar num
@@ -817,14 +793,11 @@
     return CHAR_GROUPS.length - 1;
   }
   function isGroupDone(g){
-    return g.chars.every(c =>
-      captures[c] && captures[c].length === TOTAL_VARIANTS &&
-      captures[c].every(v => v && v.raw && v.raw.length)
-    );
+    return g.chars.every(hasCapture);
   }
   // Reconstrói os chips de grupo (ativo = contém o charIndex atual,
-  // concluído = todas as variantes de todos os carateres do grupo
-  // já foram capturadas). Chamado sempre que loadVariant() corre.
+  // concluído = todos os carateres do grupo já foram capturados).
+  // Chamado sempre que loadChar() corre.
   function renderCharGroups(){
     const wrap = document.querySelector('.char-groups');
     if(!wrap) return;
@@ -837,21 +810,19 @@
     }).join('');
   }
   function jumpToGroup(gi){
-    saveCurrentVariant();
+    saveCurrentChar();
     charIndex = groupStartIndex(gi);
-    variantIndex = 0;
-    loadVariant();
+    loadChar();
   }
 
   let charIndex = 0;
-  let variantIndex = 0;
 
   // ============================================================
-  // PASSO 5 — estado guardado por glifo/variante
+  // PASSO 5 — estado guardado por glifo
   // captures['a'][0] = {
   //   raw: [ [ {x,y}, ... ], [ ...2º traço... ] ],  ← traços em bruto,
-  //         guardados para se poder reabrir a variante e continuar
-  //         a desenhar ou reprocessar com outro epsilon mais tarde
+  //         guardados para se poder reabrir o caráter e continuar a
+  //         desenhar ou reprocessar com outro epsilon mais tarde
   //   epsilon: 1.5,                                  ← valor do slider
   //         usado nesta captura
   //   paths: ['M ... C ...', 'M ... C ...'],          ← um path SVG
@@ -859,18 +830,19 @@
   //         (Catmull-Rom→Bézier) — é isto que o opentype.js vai
   //         consumir no passo 6, não os pontos em bruto
   // }
-  // (estrutura por-caráter → por-variante → objeto acima)
+  // (o [0] é só histórico de quando havia 3 variantes por caráter —
+  // agora só existe essa posição; ver PASSO 14)
   // ============================================================
   const captures = {};
 
   // ============================================================
   // PASSO 7 — persistência local (localStorage)
   // Guarda `captures` (traços em bruto + paths) e a posição atual
-  // (charIndex/variantIndex) sempre que uma variante é gravada ou
-  // apagada, e também se a app for escondida/fechada a meio de um
-  // traço — para retomares exatamente onde ficaste, mesmo depois de
-  // saíres a meio dos 94 carateres. Tudo fica no telemóvel, nada é
-  // enviado para fora.
+  // (charIndex) sempre que um caráter é gravado ou apagado, e
+  // também se a app for escondida/fechada a meio de um traço — para
+  // retomares exatamente onde ficaste, mesmo depois de saíres a meio
+  // dos 94 carateres. Tudo fica no telemóvel, nada é enviado para
+  // fora.
   // ============================================================
 
   const STORAGE_KEY = 'minhaLetra:v1';
@@ -887,13 +859,13 @@
   }
 
   // Escreve o estado inteiro no localStorage. Chamada depois de
-  // qualquer alteração a `captures` (gravar/apagar uma variante) e
+  // qualquer alteração a `captures` (gravar/apagar um caráter) e
   // como rede de segurança ao sair da app.
   function persistState(){
     try{
       setSaveStatus('saving', 'A guardar…');
       const writeAreaEl = document.getElementById('writeArea');
-      const payload = { captures, charIndex, variantIndex, writeText: writeAreaEl ? writeAreaEl.value : undefined, savedAt: Date.now() };
+      const payload = { captures, charIndex, writeText: writeAreaEl ? writeAreaEl.value : undefined, savedAt: Date.now() };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       clearTimeout(saveStatusTimer);
       saveStatusTimer = setTimeout(() => setSaveStatus('ok', 'Guardado neste dispositivo'), 150);
@@ -925,8 +897,8 @@
   }
 
   // Corre uma vez ao abrir a app: se houver trabalho de uma sessão
-  // anterior, restaura-o para memória (captures/charIndex/variantIndex)
-  // e liga o botão "Continuar fonte anterior" na home com a contagem.
+  // anterior, restaura-o para memória (captures/charIndex) e liga o
+  // botão "Continuar fonte anterior" na home com a contagem.
   function restorePersistedStateIfAny(){
     const data = loadPersistedState();
     const btn = document.getElementById('continueBtn');
@@ -936,7 +908,6 @@
     }
     Object.assign(captures, data.captures);
     if(Number.isInteger(data.charIndex)) charIndex = data.charIndex;
-    if(Number.isInteger(data.variantIndex)) variantIndex = data.variantIndex;
     if(typeof data.writeText === 'string' && data.writeText.length){
       const writeAreaEl = document.getElementById('writeArea');
       if(writeAreaEl) writeAreaEl.value = data.writeText;
@@ -946,25 +917,78 @@
       btn.disabled = n === 0;
       btn.textContent = n === 0 ? 'Continuar fonte anterior' : `Continuar fonte anterior (${n}/${ALL_CHARS.length})`;
     }
+    updateResetButtonVisibility();
   }
 
   // Botão "Continuar fonte anterior" na home — o estado já foi
-  // restaurado para captures/charIndex/variantIndex em
-  // restorePersistedStateIfAny(), por isso aqui entramos direto no
-  // ecrã de captura sem reiniciar a posição a 0.
+  // restaurado para captures/charIndex em restorePersistedStateIfAny(),
+  // por isso aqui entramos direto no ecrã de captura sem reiniciar a
+  // posição a 0.
   function continuePreviousFont(){
     goTo('capture');
     initCaptureScreen(true);
   }
 
+  // ============================================================
+  // PASSO 14 — recomeçar tudo do zero
+  // Apaga todos os carateres capturados (captures), o progresso
+  // guardado no localStorage (STORAGE_KEY) e qualquer texto de
+  // teste no ecrã "Escrever", e volta ao ecrã inicial como se a
+  // app tivesse acabado de ser aberta pela primeira vez. É
+  // destrutivo e não há undo — por isso pede confirmação antes.
+  // ============================================================
+  function resetAllProgress(){
+    const confirmed = confirm('Isto apaga todos os carateres já capturados e todo o progresso guardado neste dispositivo. Não é possível desfazer. Queres mesmo recomeçar do zero?');
+    if(!confirmed) return;
+
+    // limpa o estado em memória (mantém o objeto `captures`, só
+    // esvazia as chaves, porque outras funções já guardam referência
+    // a ele)
+    Object.keys(captures).forEach(k => delete captures[k]);
+    charIndex = 0;
+    currentStrokes = [];
+    activeStroke = null;
+    isDrawing = false;
+
+    const writeAreaEl = document.getElementById('writeArea');
+    if(writeAreaEl) writeAreaEl.value = '';
+
+    try{
+      localStorage.removeItem(STORAGE_KEY);
+    } catch(err){
+      console.error('Não foi possível apagar o progresso guardado:', err);
+    }
+
+    const continueBtn = document.getElementById('continueBtn');
+    if(continueBtn){
+      continueBtn.disabled = true;
+      continueBtn.textContent = 'Continuar fonte anterior';
+    }
+    updateResetButtonVisibility();
+
+    // volta ao início com o histórico de navegação limpo, para o
+    // botão "voltar" não tentar voltar a um ecrã de um trabalho que
+    // acabámos de apagar
+    history = ['home'];
+    goTo('home');
+  }
+
+  // Mostra o botão "Apagar tudo e recomeçar do zero" na home só
+  // quando há de facto alguma coisa capturada para apagar.
+  function updateResetButtonVisibility(){
+    const btn = document.getElementById('resetAllBtn');
+    if(!btn) return;
+    btn.style.display = capturedCount() > 0 ? '' : 'none';
+  }
+
   // Rede de segurança: se a app for escondida/fechada a meio de um
   // traço (ida para segundo plano no Android/Capacitor, fecho do
-  // browser), guarda a variante corrente antes que isso aconteça —
+  // browser), guarda o caráter corrente antes que isso aconteça —
   // é o cenário exato que este passo existe para cobrir.
   function flushBeforeLeaving(){
     const captureScreen = document.querySelector('.screen[data-screen="capture"]');
     if(captureScreen && captureScreen.classList.contains('active')){
-      saveCurrentVariant();
+      saveCurrentChar();
     }
     persistState();
   }
@@ -973,9 +997,11 @@
   });
   window.addEventListener('pagehide', flushBeforeLeaving);
 
-  let currentStrokes = [];   // traços já terminados da variante atual
+  let currentStrokes = [];   // traços já terminados do caráter atual
   let activeStroke = null;   // traço a meio de ser desenhado agora
   let isDrawing = false;
+  let eraserMode = false;    // false = caneta (desenha), true = borracha (apaga traços ao tocar-lhes)
+  const ERASER_RADIUS_PX = 16; // distância, em píxeis do ecrã, a que a borracha "agarra" um traço
   let canvas, ctx;
   const STROKE_WIDTH_PX = 3.2;      // espessura do traço no canvas (px) — usada também no passo 6
   let captureCanvasSize = { width: 0, height: 0 }; // tamanho CSS do canvas, definido em resizeCanvasToDisplaySize()
@@ -1005,13 +1031,13 @@
     }
 
     // resume=true (vindo de "Continuar fonte anterior"): mantém o
-    // charIndex/variantIndex já restaurados do localStorage em vez
-    // de recomeçar do 1º caráter.
+    // charIndex já restaurado do localStorage em vez de recomeçar do
+    // 1º caráter.
     if(!resume){
       charIndex = 0;
-      variantIndex = 0;
     }
-    loadVariant();
+    setEraserMode(false);
+    loadChar();
   }
 
   function resizeCanvasToDisplaySize(){
@@ -1040,17 +1066,26 @@
 
   function onPointerDown(e){
     e.preventDefault();
-    isDrawing = true;
     const p = pointFromEvent(e);
+    canvas.setPointerCapture(e.pointerId);
+    if(eraserMode){
+      isDrawing = true; // reaproveita a mesma flag: "há um dedo/caneta em contacto"
+      eraseStrokesNear(p);
+      return;
+    }
+    isDrawing = true;
     activeStroke = [p];
     ctx.beginPath();
     ctx.moveTo(p.x, p.y);
-    canvas.setPointerCapture(e.pointerId);
   }
 
   function onPointerMove(e){
     if(!isDrawing) return;
     const p = pointFromEvent(e);
+    if(eraserMode){
+      eraseStrokesNear(p);
+      return;
+    }
     const last = activeStroke[activeStroke.length - 1];
     if(last && Math.hypot(p.x - last.x, p.y - last.y) < 1) return; // ignora ruído sub-pixel
     activeStroke.push(p);
@@ -1061,6 +1096,10 @@
   function onPointerUp(e){
     if(!isDrawing) return;
     isDrawing = false;
+    if(eraserMode){
+      updateDebugReadout();
+      return;
+    }
     if(activeStroke && activeStroke.length > 1){
       currentStrokes.push(activeStroke);
     }
@@ -1069,10 +1108,96 @@
     updateDebugReadout();
   }
 
+  // Apaga (por inteiro) qualquer traço que passe perto do ponto p —
+  // é um apagar "por traço", não por pixel: assim que a borracha toca
+  // em qualquer parte de um traço, esse traço desaparece todo, o que
+  // evita ficar com bocadinhos de traço partidos e inválidos para a
+  // simplificação (RDP) do passo 6.
+  function eraseStrokesNear(p){
+    const before = currentStrokes.length;
+    currentStrokes = currentStrokes.filter(stroke =>
+      !stroke.some(pt => Math.hypot(pt.x - p.x, pt.y - p.y) <= ERASER_RADIUS_PX)
+    );
+    if(currentStrokes.length !== before){
+      redrawStrokes();
+    }
+  }
+
+  // Alterna entre caneta e borracha — só muda o MODO, não apaga nada
+  // sozinho; quem apaga é eraseStrokesNear(), chamada a partir dos
+  // handlers de pointer enquanto o modo borracha estiver ativo.
+  function setEraserMode(isEraser){
+    eraserMode = isEraser;
+    const penBtn = document.getElementById('penToolBtn');
+    const eraserBtn = document.getElementById('eraserToolBtn');
+    if(penBtn) penBtn.classList.toggle('tool-active', !isEraser);
+    if(eraserBtn) eraserBtn.classList.toggle('tool-active', isEraser);
+    if(canvas) canvas.style.cursor = isEraser ? 'cell' : 'crosshair';
+  }
+
+  // Desfaz só o último traço (uma "pincelada"), ao contrário de
+  // "Limpar tudo" que apaga o caráter inteiro. Útil para corrigir um
+  // traço mal desenhado sem ter de recomeçar a letra do zero.
+  function undoLastStroke(){
+    if(!currentStrokes.length) return;
+    currentStrokes.pop();
+    redrawStrokes();
+    updateDebugReadout();
+  }
+
+  // Linhas-guia de caligrafia (4 no total) — desenhadas nos sítios
+  // exatos para onde canvasPointToFontUnits() depois mapeia cada
+  // valor de referência, para o que se vê ao desenhar corresponder
+  // ao resultado final na fonte:
+  //   1) linha do topo alto  — maiúsculas, números, minúsculas com
+  //      "haste" para cima (b, d, f, h, k, l, t)
+  //   2) linha do topo baixo — minúsculas "normais" (a, c, e, m, n,
+  //      o, r, s, u, v, w, x, z) — garante que ficam todas com a
+  //      mesma altura entre si
+  //   3) linha de base — onde a maioria das letras assenta
+  //   4) linha do rabicho — até onde descem g, j, p, q, y, ç, f
+  // As duas linhas relevantes para a letra atual ficam mais fortes;
+  // as outras duas ficam esbatidas, só como referência.
+  function fontYToCanvasPx(fontY, canvasHeight){
+    return (FONT_ASCENDER - fontY) * (canvasHeight / FONT_UNITS_PER_EM);
+  }
+
+  function drawGuideLine(rect, fontY, color, strong){
+    const y = fontYToCanvasPx(fontY, rect.height);
+    ctx.save();
+    ctx.setLineDash(strong ? [5, 4] : [3, 5]);
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = strong ? 0.9 : 0.35;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(rect.width, y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBaselineGuide(){
+    if(!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const char = ALL_CHARS[charIndex];
+    const topIsTall = isAscenderHeight(char);
+    const bottomIsDescender = DESCENDER_CHARS.has(char);
+
+    // topo baixo (x-height) — forte só se a letra atual for "normal"
+    drawGuideLine(rect, FONT_X_HEIGHT, '#2B4C7E', !topIsTall);
+    // topo alto (ascendente/maiúsculas) — forte só se a letra atual for alta
+    drawGuideLine(rect, FONT_CAP_HEIGHT, '#2B4C7E', topIsTall);
+    // linha de base — sempre forte, é a referência principal
+    drawGuideLine(rect, 0, '#A63D40', true);
+    // rabicho (descendente) — forte só se a letra atual tiver rabicho
+    drawGuideLine(rect, DESCENDER_TARGET_BOTTOM, '#A63D40', bottomIsDescender);
+  }
+
   function redrawStrokes(){
     if(!ctx) return;
     const rect = canvas.getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
+    drawBaselineGuide();
     currentStrokes.forEach(stroke => {
       if(stroke.length < 2) return;
       ctx.beginPath();
@@ -1234,96 +1359,81 @@
     activeStroke = null;
     isDrawing = false;
     const char = ALL_CHARS[charIndex];
-    if(captures[char]) captures[char][variantIndex] = undefined;
+    if(captures[char]) captures[char][0] = undefined;
     redrawStrokes();
     updateDebugReadout();
     updateProgress();
     persistState();
   }
 
-  function loadVariant(){
+  function loadChar(){
     const char = ALL_CHARS[charIndex];
-    const saved = captures[char] && captures[char][variantIndex];
+    const saved = captures[char] && captures[char][0];
     currentStrokes = saved ? JSON.parse(JSON.stringify(saved.raw)) : [];
     activeStroke = null;
     document.getElementById('currentChar').textContent = char;
-    document.querySelectorAll('.variant-dot').forEach((dot, i) => {
-      dot.classList.toggle('filled', i <= variantIndex);
-    });
     redrawStrokes();
     updateDebugReadout();
     updateProgress();
     renderCharGroups();
   }
 
-  function saveCurrentVariant(){
-    if(!currentStrokes.length) return; // nada desenhado nesta variante — não sobrescreve o que já existia
+  // Guarda o traço do caráter atual. Continua a gravar-se dentro de
+  // um array (captures[char][0]) por compatibilidade com trabalho já
+  // guardado antes desta versão — mas só existe a posição 0, já não
+  // há uma posição.
+  function saveCurrentChar(){
+    if(!currentStrokes.length) return; // nada desenhado neste caráter — não sobrescreve o que já existia
     const char = ALL_CHARS[charIndex];
     if(!captures[char]) captures[char] = [];
     const epsilon = getEpsilon();
     const paths = currentStrokes
       .map(stroke => pointsToSmoothPathD(simplifyStroke(stroke, epsilon)))
       .filter(Boolean);
-    captures[char][variantIndex] = {
+    captures[char][0] = {
       raw: JSON.parse(JSON.stringify(currentStrokes)),
       epsilon,
-      paths
+      paths,
+      canvasSize: { width: captureCanvasSize.width, height: captureCanvasSize.height }
     };
     persistState();
   }
 
-  function totalCapturedSlots(){
-    let done = 0;
-    ALL_CHARS.forEach(c => {
-      (captures[c] || []).forEach(v => { if(v && v.raw && v.raw.length) done++; });
-    });
-    return done;
-  }
-
   let announcedFontReady = false;
-  let announcedAllVariants = false;
 
-  // ============================================================
-  // PASSO 11 — o aviso de conclusão passa a olhar para os dados
-  // reais (o mesmo cálculo da barra de progresso "X de Y"), não
-  // para a posição no ciclo de carateres/variantes.
-  //
-  // Antes, avançar com "Seguinte" sem desenhar nada também contava
-  // para dar a volta ao ciclo — por isso o aviso "já está tudo"
-  // podia aparecer com menos traços reais do que os que a barra de
-  // progresso mostrava.
-  //
-  // Bónus: a fonte só usa a 1ª variante de cada letra (ver
-  // buildFont, passo 6) — por isso o primeiro aviso já chega assim
-  // que todos os carateres têm pelo menos UM traço, sem esperar
-  // pelas 3 variantes de todos.
-  // ============================================================
+  // Avisa quando todos os carateres já têm um traço capturado — a
+  // fonte já pode ser gerada.
   function checkCaptureMilestones(){
     if(!announcedFontReady && capturedCount() >= ALL_CHARS.length){
       announcedFontReady = true;
-      alert(`Já tens pelo menos um traço para cada um dos ${ALL_CHARS.length} carateres — já dá para gerar a tua fonte. As variantes extra (até ${TOTAL_VARIANTS} por letra) só servem para uma letra mais natural, mais tarde.`);
+      alert(`Já tens um traço para cada um dos ${ALL_CHARS.length} carateres — já dá para gerar a tua fonte.`);
       goToDoneAndGenerate();
-      return;
-    }
-    const totalSlots = ALL_CHARS.length * TOTAL_VARIANTS;
-    if(!announcedAllVariants && totalCapturedSlots() >= totalSlots){
-      announcedAllVariants = true;
-      alert(`Capturaste as ${TOTAL_VARIANTS} variantes de todos os ${ALL_CHARS.length} carateres. (A fonte gerada continua a usar só a 1ª variante de cada, por agora.)`);
     }
   }
 
-  function nextVariant(){
-    saveCurrentVariant();
-    variantIndex++;
-    if(variantIndex >= TOTAL_VARIANTS){
-      variantIndex = 0;
-      charIndex++;
-      if(charIndex >= ALL_CHARS.length){
-        charIndex = 0;
-      }
+  function nextChar(){
+    saveCurrentChar();
+    charIndex++;
+    if(charIndex >= ALL_CHARS.length){
+      charIndex = 0;
     }
-    loadVariant();
+    loadChar();
     checkCaptureMilestones();
+  }
+
+  // Volta à letra anterior, para poderes redesenhar algo que já
+  // passaste — sem isto só era possível "saltar" para o início de um
+  // grupo inteiro (jumpToGroup), não recuar uma letra de cada vez.
+  // Grava primeiro o que estiver desenhado na letra atual (tal como
+  // nextChar), depois recua uma letra. loadChar() já carrega o traço
+  // gravado dessa letra, pronto a apagar ou ajustar.
+  function prevChar(){
+    saveCurrentChar();
+    charIndex--;
+    if(charIndex < 0){
+      charIndex = ALL_CHARS.length - 1;
+    }
+    loadChar();
   }
 
   function updateDebugReadout(){
@@ -1344,14 +1454,11 @@
   }
 
   function updateProgress(){
-    const totalSlots = ALL_CHARS.length * TOTAL_VARIANTS;
-    let done = 0;
-    ALL_CHARS.forEach(c => {
-      (captures[c] || []).forEach(v => { if(v && v.raw && v.raw.length) done++; });
-    });
-    const pct = Math.round((done / totalSlots) * 100);
+    const done = capturedCount();
+    const total = ALL_CHARS.length;
+    const pct = Math.round((done / total) * 100);
     document.getElementById('progressFill').style.width = pct + '%';
-    document.getElementById('progressCount').textContent = `${done} de ${totalSlots} (conjunto de teste)`;
+    document.getElementById('progressCount').textContent = `${done} de ${total} carateres`;
     document.getElementById('progressPercent').textContent = pct + '%';
   }
 
@@ -1361,7 +1468,7 @@
   // O opentype.js precisa de CONTORNOS FECHADOS E PREENCHÍVEIS por
   // glifo (é assim que qualquer fonte vetorial funciona — não há
   // conceito de "linha com espessura"). Mas o que temos guardado em
-  // captures[char][variante].raw é uma LINHA fina (a trajetória do
+  // captures[char][0].raw é uma LINHA fina (a trajetória do
   // dedo/rato). Por isso este passo faz uma coisa nova em relação
   // aos passos 1-5: pega em cada traço já suavizado (Catmull-Rom,
   // passo 3) e "engorda-o" — gera um contorno à volta da linha,
@@ -1380,11 +1487,19 @@
   // fundo perto do descender.
   // ============================================================
 
-  const FONT_UNITS_PER_EM = 1000;
+  const FONT_UNITS_PER_EM = 1200;
   const FONT_ASCENDER = 800;
-  const FONT_DESCENDER = -200;
+  const FONT_DESCENDER = -400;
   const GLYPH_SIDE_BEARING = 40;   // espaço em branco à esquerda/direita de cada glifo
   const SPACE_ADVANCE = Math.round(FONT_UNITS_PER_EM * 0.32);
+  // Espessura do traço FINAL da fonte, em unidades de em (0-1000) — não em
+  // píxeles do canvas. Antes disto, a espessura era calculada a partir de
+  // STROKE_WIDTH_PX (o traço visual no ecrã ao desenhar) convertido para
+  // unidades de fonte com a escala do canvas ATUAL — dava traços de ~10
+  // unidades (quase invisíveis; só o negrito sintético do WPS os grossava
+  // o suficiente para se verem). Uma fonte "Regular" normal costuma andar
+  // entre 60 e 100 unidades. 90 dá um traço de caneta com bom contraste.
+  const FONT_STROKE_UNITS = 90;
 
   // Amostra uma curva cúbica de Bézier em N pontos — é preciso para
   // "engordar" a curva (offset por normais), que só funciona bem em
@@ -1453,14 +1568,19 @@
 
   // Converte um ponto em píxeles do canvas (Y para baixo) num ponto
   // em unidades de fonte (Y para cima, origem na linha de base).
-  function canvasPointToFontUnits(p){
-    const h = captureCanvasSize.height || 300;
-    const scale = FONT_UNITS_PER_EM / h;
+  // Recebe o h (altura do canvas) de quem chama — tem de ser o h de
+  // QUANDO aquele traço foi desenhado, não o h atual do ecrã (ver
+  // nota em buildGlyphPath), senão letras capturadas com o canvas
+  // noutro tamanho saem com escala errada e ficam com tamanhos
+  // diferentes entre si.
+  function canvasPointToFontUnits(p, h){
+    const height = h || captureCanvasSize.height || 300;
+    const scale = FONT_UNITS_PER_EM / height;
     return { x: p.x * scale, y: FONT_ASCENDER - p.y * scale };
   }
 
   // Constrói o opentype.Path de um glifo a partir dos traços em bruto
-  // de UMA variante — cada traço vira um contorno fechado (fita).
+  // do caráter — cada traço vira um contorno fechado (fita).
   // Devolve também minX/maxX (em unidades de fonte) para calcular a
   // largura de avanço do glifo a seguir.
   function buildGlyphPath(char, variantIdx){
@@ -1470,8 +1590,19 @@
       return { path, minX: 0, maxX: 0 };
     }
     const epsilon = cap.epsilon || 1.5;
-    const halfWidth = STROKE_WIDTH_PX / 2;
+    // Usa o tamanho do canvas guardado NESTA captura; capturas antigas
+    // (feitas antes desta correção) não têm esse campo — nesse caso
+    // assume-se o tamanho atual do ecrã como melhor estimativa.
+    const capH = (cap.canvasSize && cap.canvasSize.height) || captureCanvasSize.height || 300;
+    const scale = FONT_UNITS_PER_EM / capH;
+    // Espessura alvo fixa (FONT_STROKE_UNITS) em unidades de fonte,
+    // convertida para píxeles do canvas ANTES de "engordar" a linha —
+    // assim, depois da conversão para unidades de fonte, a espessura
+    // final é sempre a mesma, independentemente do tamanho do canvas
+    // em que a letra foi desenhada.
+    const halfWidth = (FONT_STROKE_UNITS / 2) / scale;
     let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
 
     cap.raw.forEach(stroke => {
       const simplified = simplifyStroke(stroke, epsilon);
@@ -1480,7 +1611,7 @@
       if(dense.length < 2) return;
       const { left, right } = offsetPolyline(dense, halfWidth);
       const contourPx = left.concat(right.slice().reverse());
-      const contour = contourPx.map(canvasPointToFontUnits);
+      const contour = contourPx.map(pt => canvasPointToFontUnits(pt, capH));
 
       path.moveTo(contour[0].x, contour[0].y);
       for(let i = 1; i < contour.length; i++) path.lineTo(contour[i].x, contour[i].y);
@@ -1489,10 +1620,18 @@
       contour.forEach(pt => {
         if(pt.x < minX) minX = pt.x;
         if(pt.x > maxX) maxX = pt.x;
+        if(pt.y < minY) minY = pt.y;
+        if(pt.y > maxY) maxY = pt.y;
       });
     });
 
-    return { path, minX: isFinite(minX) ? minX : 0, maxX: isFinite(maxX) ? maxX : 0 };
+    return {
+      path,
+      minX: isFinite(minX) ? minX : 0,
+      maxX: isFinite(maxX) ? maxX : 0,
+      minY: isFinite(minY) ? minY : 0,
+      maxY: isFinite(maxY) ? maxY : 0
+    };
   }
 
   // Desloca todos os comandos de um path em X — usado para alinhar o
@@ -1506,16 +1645,56 @@
     });
   }
 
+  // Desloca todos os comandos de um path em Y — usado para alinhar o
+  // glifo à linha de base (ver ALINHAMENTO VERTICAL abaixo).
+  function shiftPathY(path, dy){
+    if(dy === 0) return;
+    path.commands.forEach(cmd => {
+      if(cmd.y !== undefined) cmd.y += dy;
+      if(cmd.y1 !== undefined) cmd.y1 += dy;
+      if(cmd.y2 !== undefined) cmd.y2 += dy;
+    });
+  }
+
+  // ============================================================
+  // ALINHAMENTO VERTICAL — a caixa de captura não tinha nenhuma linha
+  // de base desenhada, por isso cada letra foi desenhada numa altura
+  // um pouco diferente dentro do quadrado (visível quando "abc" saem
+  // desalinhados no WPS). Em vez de obrigar a recapturar tudo,
+  // alinha-se cada glifo pela base automaticamente aqui: para a
+  // maioria dos carateres, a base do traço (o ponto mais baixo) é
+  // empurrada para a linha de base (y=0); para os que têm "rabicho"
+  // (g, j, p, q, y, ç...), a base é empurrada para um pouco abaixo da
+  // linha de base, para o rabicho continuar a descer como esperado.
+  // ============================================================
+  const DESCENDER_CHARS = new Set(['f', 'g', 'j', 'p', 'q', 'y', 'ç', 'Ç']);
+  const DESCENDER_TARGET_BOTTOM = -360; // unidades de fonte abaixo da baseline
+  // Linhas-guia de altura (usadas também em drawBaselineGuide, mais
+  // acima no ficheiro — ver comentário lá): topo baixo (x-height) para
+  // minúsculas "normais", topo alto (cap-height) para maiúsculas,
+  // números e minúsculas com haste.
+  const FONT_X_HEIGHT = 500;
+  const FONT_CAP_HEIGHT = 700;
+  const ASCENDER_LOWERCASE = new Set(['b', 'd', 'f', 'h', 'k', 'l', 't']);
+  const DIGIT_CHARS = new Set('0123456789'.split(''));
+  function isUpperCaseChar(ch){
+    return ch !== ch.toLowerCase() && ch === ch.toUpperCase();
+  }
+  function isAscenderHeight(char){
+    return isUpperCaseChar(char) || DIGIT_CHARS.has(char) || ASCENDER_LOWERCASE.has(char);
+  }
+
+  function targetGlyphBottom(char){
+    return DESCENDER_CHARS.has(char) ? DESCENDER_TARGET_BOTTOM : 0;
+  }
+
   // Nome de glifo estável e válido em qualquer motor de fontes —
   // evita lidar com acentos/pontuação em nomes de glifo "bonitos".
   function glyphNameFor(char){
     return 'uni' + char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
   }
 
-  // Um caráter só entra na fonte se a 1ª variante tiver sido
-  // desenhada — é a variante "canónica" usada no .ttf; a 2ª e 3ª
-  // ficam para a variação natural na pré-visualização (fora deste
-  // passo).
+  // Um caráter só entra na fonte se tiver sido desenhado.
   function hasCapture(char){
     const c = captures[char] && captures[char][0];
     return !!(c && c.raw && c.raw.length);
@@ -1546,9 +1725,10 @@
 
     ALL_CHARS.forEach(char => {
       if(!hasCapture(char)) return;
-      const { path, minX, maxX } = buildGlyphPath(char, 0);
+      const { path, minX, maxX, minY } = buildGlyphPath(char, 0);
       const glyphWidth = (maxX - minX) || Math.round(FONT_UNITS_PER_EM * 0.5);
       shiftPathX(path, GLYPH_SIDE_BEARING - minX);
+      shiftPathY(path, targetGlyphBottom(char) - minY);
       glyphs.push(new opentype.Glyph({
         name: glyphNameFor(char),
         unicode: char.codePointAt(0),
@@ -1579,7 +1759,7 @@
       return;
     }
     const meta = document.getElementById('doneFileMeta');
-    if(meta) meta.textContent = `${n} de ${ALL_CHARS.length} carateres capturados · a usar a 1ª variante de cada`;
+    if(meta) meta.textContent = `${n} de ${ALL_CHARS.length} carateres capturados`;
     goTo('done');
   }
 
@@ -1823,211 +2003,144 @@
   }
 
   // ============================================================
-  // PASSO 13 — gravar o .ttf diretamente na pasta "Fonts" do
-  // telemóvel, para o WPS Office o encontrar sem precisar de apps
-  // como iFont/HiFont (que em muitos Android atuais já não
-  // conseguem instalar fontes a nível do sistema sem root).
+  // PASSO 15 — exportar como .docx real (texto editável, não imagem)
   //
-  // Usa a File System Access API do browser (showDirectoryPicker):
-  // o utilizador escolhe a pasta "Fonts" uma vez, e a partir daí
-  // escrevemos o ficheiro lá dentro com permissão concedida pelo
-  // próprio sistema — sem passar pela pasta Download nem precisar
-  // de mover o ficheiro à mão. Guardamos a referência da pasta
-  // (directory handle) no IndexedDB para não pedir de novo sempre
-  // que o utilizador gerar a fonte outra vez.
+  // Ao contrário do PNG acima, isto NÃO desenha nada — gera um Word
+  // (.docx) a sério: parágrafos com TEXTO de verdade, formatados
+  // para usar a fonte "MinhaLetra" pelo NOME. Um .docx é só um zip
+  // com uns ficheiros XML lá dentro (por isso precisamos do JSZip),
+  // por isso construímos esse zip à mão em vez de desenhar em canvas.
   //
-  // Isto só funciona em browsers baseados em Chromium com suporte
-  // a esta API (Chrome/Edge/Samsung Internet recentes no Android).
-  // Onde não há suporte, o ecrã mostra só as instruções manuais.
+  // Isto só mostra a letra certa se a fonte "MinhaLetra" já estiver
+  // instalada no telemóvel que abrir o ficheiro — um .docx normal só
+  // GUARDA o NOME da fonte a usar, não os contornos dela; quem lê o
+  // ficheiro é que tem de já ter essa fonte instalada para a
+  // aplicar. Sem isso, o Word/WPS mostra o texto na fonte de
+  // substituição habitual dele, mas o ficheiro continua a abrir e o
+  // texto continua editável.
+  //
+  // A paginação (quantas linhas cabem por página A4) e a quebra de
+  // página são feitas pelo próprio Word/WPS, tal como em qualquer
+  // documento normal — não há nada a calcular aqui.
   // ============================================================
 
-  const WPS_DB_NAME = 'minhaLetraWpsDB';
-  const WPS_STORE_NAME = 'handles';
-  const WPS_HANDLE_KEY = 'fontsFolderHandle';
-
-  function openWpsHandleDB(){
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(WPS_DB_NAME, 1);
-      req.onupgradeneeded = () => req.result.createObjectStore(WPS_STORE_NAME);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
+  // Escapa os 5 carateres que têm significado especial em XML —
+  // sem isto, um texto com "&", "<", ">", aspas ou apóstrofo partia
+  // o document.xml e o Word recusava-se a abrir o ficheiro.
+  function escapeXml(str){
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   }
 
-  async function getSavedFontsFolderHandle(){
+  async function generateAndDownloadDocx(){
+    const text = (document.getElementById('writeArea') || {}).value || '';
+    if(!text.trim()){
+      alert('Escreve algo primeiro.');
+      return;
+    }
+    if(typeof JSZip === 'undefined'){
+      alert('A biblioteca JSZip ainda não carregou — verifica a ligação à internet e tenta outra vez.');
+      return;
+    }
+
+    // O slider "Tamanho" está em píxeis (ecrã); o Word usa pontos
+    // (1px = 0.75pt a 96dpi) e "meios-ponto" no XML (w:sz), daí o ×2.
+    const fontSizePx = parseInt((document.getElementById('writeFontSize') || {}).value || '26', 10);
+    const halfPoints = Math.round(fontSizePx * 0.75 * 2);
+
+    // Cada linha do textarea (separada por \n) vira um parágrafo. Uma
+    // linha vazia ainda tem de virar um <w:p> (parágrafo vazio) para
+    // não perder linhas em branco que o utilizador deixou de propósito.
+    const paragraphsXml = text.split('\n').map(line => {
+      if(!line){
+        return '<w:p/>';
+      }
+      return `<w:p><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`;
+    }).join('');
+
+    // Página A4 (11906×16838 vigésimos de ponto/twips) com margens de
+    // ~2,5cm (1417 twips) de cada lado — a "Normal" habitual do Word.
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    ${paragraphsXml}
+    <w:sectPr>
+      <w:pgSz w:w="11906" w:h="16838"/>
+      <w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+
+    // docDefaults aplica a fonte e o tamanho a TODO o texto de uma
+    // só vez — mais simples e mais leve (para documentos grandes)
+    // do que repetir <w:rPr> em cada parágrafo.
+    const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:docDefaults>
+    <w:rPrDefault>
+      <w:rPr>
+        <w:rFonts w:ascii="MinhaLetra" w:hAnsi="MinhaLetra" w:eastAsia="MinhaLetra" w:cs="MinhaLetra"/>
+        <w:sz w:val="${halfPoints}"/>
+        <w:szCs w:val="${halfPoints}"/>
+      </w:rPr>
+    </w:rPrDefault>
+  </w:docDefaults>
+  <w:style w:type="paragraph" w:default="1" w:styleId="Normal">
+    <w:name w:val="Normal"/>
+    <w:rPr>
+      <w:rFonts w:ascii="MinhaLetra" w:hAnsi="MinhaLetra" w:eastAsia="MinhaLetra" w:cs="MinhaLetra"/>
+      <w:sz w:val="${halfPoints}"/>
+      <w:szCs w:val="${halfPoints}"/>
+    </w:rPr>
+  </w:style>
+</w:styles>`;
+
+    const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+</Types>`;
+
+    const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`;
+
+    const documentRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
     try{
-      const db = await openWpsHandleDB();
-      return await new Promise((resolve, reject) => {
-        const tx = db.transaction(WPS_STORE_NAME, 'readonly');
-        const req = tx.objectStore(WPS_STORE_NAME).get(WPS_HANDLE_KEY);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => reject(req.error);
+      const zip = new JSZip();
+      zip.file('[Content_Types].xml', contentTypesXml);
+      zip.folder('_rels').file('.rels', rootRelsXml);
+      const wordFolder = zip.folder('word');
+      wordFolder.file('document.xml', documentXml);
+      wordFolder.file('styles.xml', stylesXml);
+      wordFolder.folder('_rels').file('document.xml.rels', documentRelsXml);
+
+      const blob = await zip.generateAsync({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'minha-letra.docx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
     } catch(err){
-      console.error(err);
-      return null;
-    }
-  }
-
-  async function saveFontsFolderHandle(handle){
-    try{
-      const db = await openWpsHandleDB();
-      await new Promise((resolve, reject) => {
-        const tx = db.transaction(WPS_STORE_NAME, 'readwrite');
-        tx.objectStore(WPS_STORE_NAME).put(handle, WPS_HANDLE_KEY);
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-      });
-    } catch(err){
-      console.error(err);
-    }
-  }
-
-  function setWpsStatus(state, text){
-    const el = document.getElementById('wpsPickerStatus');
-    const label = document.getElementById('wpsPickerStatusText');
-    if(!el || !label) return;
-    el.classList.remove('loading', 'error');
-    if(state === 'loading') el.classList.add('loading');
-    if(state === 'error') el.classList.add('error');
-    label.textContent = text;
-  }
-
-  // App empacotada (Capacitor/WebView) com a ponte nativa
-  // "AndroidFontInstall" já regista o método saveFont(base64,
-  // filename), que grava diretamente numa pasta pública "Fonts/" —
-  // ver build-apk.yml (FontInstallBridge). Esta via é preferida
-  // porque funciona sempre dentro do APK, ao contrário do
-  // showDirectoryPicker (só existe no Chrome enquanto browser).
-  function hasNativeFontBridge(){
-    return !!(window.AndroidFontInstall && typeof window.AndroidFontInstall.saveFont === 'function');
-  }
-
-  function arrayBufferToBase64(buf){
-    let binary = '';
-    const bytes = new Uint8Array(buf);
-    const chunk = 0x8000;
-    for(let i = 0; i < bytes.length; i += chunk){
-      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-    }
-    return btoa(binary);
-  }
-
-  // Ao entrar no ecrã "wps": decide qual das duas vias mostrar.
-  // 1) app empacotada com a ponte nativa -> um único botão que grava
-  //    logo, sem escolher pasta (o Android já sabe onde é "Fonts/").
-  // 2) browser com suporte a showDirectoryPicker -> botão de escolher
-  //    pasta, como antes.
-  // 3) nenhum dos dois -> esconde o bloco e mostra só as instruções
-  //    manuais, para não prometer algo que não vai funcionar.
-  async function initWpsScreen(){
-    const block = document.getElementById('wpsPickerBlock');
-    const btn = document.getElementById('wpsPickerBtn');
-    if(!block || !btn) return;
-
-    if(hasNativeFontBridge()){
-      block.style.display = '';
-      btn.textContent = 'Gravar em Fonts/ (app instalada)';
-      btn.onclick = saveFontViaNativeBridge;
-      setWpsStatus('ok', 'Esta app já sabe onde gravar — é só tocar no botão.');
-      return;
-    }
-
-    if(typeof window.showDirectoryPicker === 'function'){
-      block.style.display = '';
-      btn.onclick = saveFontToPickedFolder;
-      const saved = await getSavedFontsFolderHandle();
-      btn.textContent = saved ? 'Gravar na pasta "Fonts" já escolhida' : 'Escolher a pasta "Fonts" e gravar aí';
-      return;
-    }
-
-    block.style.display = 'none';
-  }
-
-  // Via 1 — app empacotada: passa os bytes da fonte, em base64, para
-  // o lado nativo através da ponte AndroidFontInstall.
-  function saveFontViaNativeBridge(){
-    if(capturedCount() === 0){
-      alert('Ainda não capturaste nenhum caráter.');
-      return;
-    }
-    if(typeof opentype === 'undefined'){
-      setWpsStatus('error', 'A biblioteca opentype.js ainda não carregou.');
-      return;
-    }
-    setWpsStatus('loading', 'A preparar a fonte…');
-    try{
-      const font = buildFont();
-      const arrayBuffer = font.toArrayBuffer();
-      const base64 = arrayBufferToBase64(arrayBuffer);
-      window.AndroidFontInstall.saveFont(base64, 'MinhaLetra.ttf');
-      // o toast de confirmação/erro aparece do lado nativo (Android);
-      // aqui só confirmamos que o pedido foi enviado.
-      setWpsStatus('ok', 'Pedido enviado — vê a confirmação no telemóvel e reabre o WPS Office.');
-    } catch(err){
-      console.error(err);
-      setWpsStatus('error', 'Não foi possível preparar a fonte: ' + err.message);
-    }
-  }
-
-  // Via 2 — browser: reaproveita buildFont() do passo 6 (a mesma
-  // função usada no download normal).
-  async function saveFontToPickedFolder(){
-    if(capturedCount() === 0){
-      alert('Ainda não capturaste nenhum caráter.');
-      return;
-    }
-    if(typeof opentype === 'undefined'){
-      setWpsStatus('error', 'A biblioteca opentype.js ainda não carregou.');
-      return;
-    }
-    setWpsStatus('loading', 'A preparar a fonte…');
-    try{
-      let dirHandle = await getSavedFontsFolderHandle();
-
-      // Verifica se ainda temos permissão de escrita numa pasta já
-      // escolhida antes; se não, ou se ainda não há nenhuma
-      // guardada, pede ao utilizador para escolher (idealmente a
-      // pasta "Fonts").
-      let needsPicker = true;
-      if(dirHandle){
-        try{
-          const perm = await dirHandle.queryPermission({ mode: 'readwrite' });
-          if(perm === 'granted'){
-            needsPicker = false;
-          } else {
-            const req = await dirHandle.requestPermission({ mode: 'readwrite' });
-            needsPicker = (req !== 'granted');
-          }
-        } catch(err){
-          needsPicker = true;
-        }
-      }
-
-      if(needsPicker){
-        setWpsStatus('loading', 'Escolhe a pasta "Fonts" do telemóvel…');
-        dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-        await saveFontsFolderHandle(dirHandle);
-      }
-
-      setWpsStatus('loading', 'A gravar MinhaLetra.ttf…');
-      const font = buildFont();
-      const arrayBuffer = font.toArrayBuffer();
-      const fileHandle = await dirHandle.getFileHandle('MinhaLetra.ttf', { create: true });
-      const writable = await fileHandle.createWritable();
-      await writable.write(arrayBuffer);
-      await writable.close();
-
-      setWpsStatus('ok', 'Gravado! Fecha e reabre o WPS Office para a fonte aparecer.');
-      const btn = document.getElementById('wpsPickerBtn');
-      if(btn) btn.textContent = 'Gravar de novo nessa pasta';
-    } catch(err){
-      console.error(err);
-      if(err && err.name === 'AbortError'){
-        setWpsStatus('error', 'Cancelaste a escolha da pasta.');
-      } else {
-        setWpsStatus('error', 'Não foi possível gravar: ' + err.message);
-      }
+      console.error('Não foi possível gerar o .docx:', err);
+      alert('Não foi possível gerar o ficheiro Word: ' + err.message);
     }
   }
 
