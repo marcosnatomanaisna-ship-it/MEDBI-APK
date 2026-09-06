@@ -547,38 +547,10 @@
     </div>
 
     <div class="action-list">
-      <button class="btn btn-primary" onclick="goTo('method')">Começar a capturar a minha letra</button>
+      <button class="btn btn-primary" onclick="startCapture('draw')">Começar a capturar a minha letra</button>
       <button class="btn btn-text" onclick="continuePreviousFont()" disabled id="continueBtn">Continuar fonte anterior</button>
       <button class="btn btn-text" onclick="resetAllProgress()" id="resetAllBtn" style="display:none; color:var(--seal-red);">Apagar tudo e recomeçar do zero</button>
     </div>
-  </div>
-
-  <!-- ===================== ECRÃ 2 — ESCOLHER MÉTODO ===================== -->
-  <div class="screen" data-screen="method">
-    <h2>Como queres escrever os teus carateres?</h2>
-    <p class="lead">Podes combinar os dois métodos — por exemplo, desenhar as maiúsculas e fotografar as minúsculas.</p>
-
-    <div class="method-card" onclick="startCapture('draw')">
-      <div class="method-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-      </div>
-      <div>
-        <div class="method-title">Desenhar no ecrã</div>
-        <div class="method-desc">Usa o dedo ou uma caneta digital para escrever cada letra diretamente no telemóvel.</div>
-      </div>
-    </div>
-
-    <div class="method-card" onclick="startCapture('photo')">
-      <div class="method-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      </div>
-      <div>
-        <div class="method-title">Fotografar papel</div>
-        <div class="method-desc">Escreve o alfabeto numa folha usando a nossa grelha, tira uma foto e a app extrai as letras.</div>
-      </div>
-    </div>
-
-    <button class="btn btn-secondary" style="margin-top:8px" onclick="alert('Fase 3 — ainda não implementado. Por agora, descarrega o modelo de grelha em PDF.')">Descarregar folha modelo (PDF)</button>
   </div>
 
   <!-- ===================== ECRÃ 3 — CAPTURA ===================== -->
@@ -708,10 +680,9 @@
 </div>
 
 <script>
-  const screens = ['home','method','capture','preview','write','done'];
+  const screens = ['home','capture','preview','write','done'];
   const titles = {
     home: 'Minha Letra',
-    method: 'Escolher método',
     capture: 'A capturar',
     preview: 'Pré-visualizar',
     write: 'Escrever',
