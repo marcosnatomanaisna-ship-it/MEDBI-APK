@@ -1,1156 +1,134 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!doctype html>
+<html lang="pt">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pré e Pós-Operatório — Módulo de Estudo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#F2F6F8; --surface:#FFFFFF; --surface-2:#E9F0F3; --border:#D8E2E8;
-  --ink:#152C38; --ink-muted:#5B7180;
-  --teal:#0E7490; --teal-dark:#0B3142; --teal-deep:#0A4B5C;
-  --amber:#B45309; --amber-bg:#FFF7E8; --amber-bd:#F0D8A8;
-  --red:#B91C1C; --red-bg:#FDF0EF; --red-bd:#F0C4C0;
-  --green:#15803D; --green-bg:#F0F8F1; --green-bd:#C7E0CC;
-  --blue:#1D4ED8; --blue-bg:#EEF3FD; --blue-bd:#C6D6F5;
-  --purple:#6D28D9; --purple-bg:#F4F0FC; --purple-bd:#D9CBF2;
-  --radius:10px; --shadow:0 1px 2px rgba(11,49,66,.06), 0 4px 16px rgba(11,49,66,.06);
-}
-:root:not([data-theme="light"]){
-  @media (prefers-color-scheme: dark){
-    --bg:#0C1B23; --surface:#122631; --surface-2:#16303C; --border:#26414D;
-    --ink:#E7F0F3; --ink-muted:#93ACB8;
-    --teal:#38B4D4; --teal-dark:#DCEEF3; --teal-deep:#7FD4EA;
-    --amber:#E8A94C; --amber-bg:#2A2210; --amber-bd:#4A3A14;
-    --red:#F0847C; --red-bg:#2C1616; --red-bd:#4A2320;
-    --green:#6FCB8E; --green-bg:#122A1B; --green-bd:#234832;
-    --blue:#8CB0F5; --blue-bg:#131E33; --blue-bd:#233457;
-    --purple:#BFA0F0; --purple-bg:#1E1730; --purple-bd:#352550;
-    --shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.3);
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#0C1B23; --surface:#122631; --surface-2:#16303C; --border:#26414D;
-  --ink:#E7F0F3; --ink-muted:#93ACB8;
-  --teal:#38B4D4; --teal-dark:#DCEEF3; --teal-deep:#7FD4EA;
-  --amber:#E8A94C; --amber-bg:#2A2210; --amber-bd:#4A3A14;
-  --red:#F0847C; --red-bg:#2C1616; --red-bd:#4A2320;
-  --green:#6FCB8E; --green-bg:#122A1B; --green-bd:#234832;
-  --blue:#8CB0F5; --blue-bg:#131E33; --blue-bd:#233457;
-  --purple:#BFA0F0; --purple-bg:#1E1730; --purple-bd:#352550;
-  --shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.3);
-}
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
-body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;}
-h1,h2,h3,h4{font-family:"Source Serif 4",Georgia,serif;font-weight:600;color:var(--ink);margin:0 0 .5em;}
-p{margin:0 0 1em;color:var(--ink);}
-.container{max-width:920px;margin:0 auto;padding:0 20px;}
-.hero{background:linear-gradient(160deg,var(--teal-dark) 0%, var(--teal-deep) 100%);color:#EAF6FA;padding:52px 0 34px;}
-.hero .eyebrow{font-size:.78rem;letter-spacing:.04em;color:#9FD9E8;margin-bottom:10px;font-weight:500;}
-.hero h1{font-size:2.3rem;color:#fff;margin-bottom:10px;line-height:1.15;max-width:18ch;}
-.hero .lede{font-size:1.05rem;color:#CFE8EF;max-width:60ch;margin-bottom:18px;}
-.hero .sources{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
-.hero .source-tag{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#DCF2F8;font-size:.74rem;padding:5px 11px;border-radius:999px;}
-.tabnav{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow);}
-.tabnav-scroll{display:flex;gap:2px;overflow-x:auto;max-width:920px;margin:0 auto;padding:0 20px;scrollbar-width:thin;}
-.tabnav button{appearance:none;border:none;background:none;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;font-size:.86rem;font-weight:500;color:var(--ink-muted);padding:14px 14px 11px;white-space:nowrap;border-bottom:3px solid transparent;transition:color .15s ease, border-color .15s ease;}
-.tabnav button:hover{color:var(--teal);}
-.tabnav button.active{color:var(--teal);border-bottom-color:var(--teal);font-weight:600;}
-.tabpanel{display:none;padding:34px 0 70px;animation:fadein .25s ease;}
-.tabpanel.active{display:block;}
-@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
-.section{margin-bottom:34px;}
-.section h2{font-size:1.5rem;border-bottom:2px solid var(--surface-2);padding-bottom:10px;margin-bottom:16px;}
-.section h3{font-size:1.14rem;color:var(--teal-deep);margin-top:22px;}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);}
-.box{border-radius:var(--radius);padding:16px 18px;margin:16px 0;border:1px solid;}
-.box .box-label{font-weight:600;font-size:.78rem;letter-spacing:.02em;margin-bottom:6px;display:flex;align-items:center;gap:7px;}
-.box p:last-child{margin-bottom:0;}
-.box.concept{background:var(--blue-bg);border-color:var(--blue-bd);} .box.concept .box-label{color:var(--blue);}
-.box.alert{background:var(--red-bg);border-color:var(--red-bd);} .box.alert .box-label{color:var(--red);}
-.box.tip{background:var(--green-bg);border-color:var(--green-bd);} .box.tip .box-label{color:var(--green);}
-.box.value{background:var(--amber-bg);border-color:var(--amber-bd);} .box.value .box-label{color:var(--amber);}
-.box.source{background:var(--purple-bg);border-color:var(--purple-bd);font-size:.86rem;} .box.source .box-label{color:var(--purple);}
-.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--border);border-radius:var(--radius);}
-table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:560px;}
-th{background:var(--surface-2);color:var(--ink);text-align:left;padding:10px 12px;font-weight:600;border-bottom:1px solid var(--border);}
-td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--ink);}
-tr:last-child td{border-bottom:none;} tr:hover td{background:var(--surface-2);}
-td.hl-red{color:var(--red);font-weight:600;} td.hl-amber{color:var(--amber);font-weight:600;} td.hl-green{color:var(--green);font-weight:600;}
-.formula{font-family:"IBM Plex Mono",monospace;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:.86rem;text-align:center;color:var(--teal-deep);}
-.accordion{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;background:var(--surface);}
-.accordion-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;cursor:pointer;font-weight:600;color:var(--teal-deep);font-family:"Source Serif 4",serif;font-size:1.02rem;}
-.accordion-head:hover{background:var(--surface-2);}
-.accordion-head .chev{transition:transform .2s ease;color:var(--teal);font-size:.8rem;}
-.accordion.open .chev{transform:rotate(90deg);}
-.accordion-body{max-height:0;overflow:hidden;transition:max-height .3s ease;padding:0 18px;}
-.accordion.open .accordion-body{padding:0 18px 18px;}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;}
-.chip{background:var(--surface-2);border:1px solid var(--border);padding:6px 12px;border-radius:999px;font-size:.82rem;color:var(--ink);}
-.case-toggle{width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;cursor:pointer;font-weight:600;color:var(--ink);display:flex;justify-content:space-between;align-items:center;font-family:"IBM Plex Sans";font-size:.94rem;}
-.case-toggle .tag{font-size:.7rem;font-weight:500;color:var(--teal);background:var(--surface-2);padding:2px 9px;border-radius:999px;margin-right:8px;}
-.case-toggle:hover{border-color:var(--teal);}
-.case-content{max-height:0;overflow:hidden;transition:max-height .35s ease;}
-.case-content-inner{padding:14px 4px 6px 4px;}
-.case-wrap.open .case-content{max-height:1200px;}
-.case-wrap.open .case-toggle{border-color:var(--teal);background:var(--surface-2);}
-.case-wrap{margin-bottom:8px;}
-.flash-controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
-.flash-progress{font-size:.85rem;color:var(--ink-muted);}
-.flashcard-scene{perspective:1400px;max-width:560px;margin:0 auto 20px;height:260px;}
-.flashcard{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,.2,.2,1);cursor:pointer;}
-.flashcard.flipped{transform:rotateY(180deg);}
-.flash-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;padding:26px;box-shadow:var(--shadow);border:1px solid var(--border);}
-.flash-front{background:var(--surface);}
-.flash-back{background:var(--teal-dark);color:#EAF6FA;transform:rotateY(180deg);}
-.flash-back .flash-text{color:#EAF6FA;}
-.flash-text{font-size:1.02rem;font-family:"Source Serif 4",serif;color:var(--ink);}
-.flash-kicker{position:absolute;top:14px;left:18px;font-size:.72rem;color:var(--ink-muted);letter-spacing:.02em;}
-.flash-back .flash-kicker{color:#9FD9E8;}
-.flash-hint{position:absolute;bottom:12px;right:16px;font-size:.68rem;color:var(--ink-muted);}
-.flash-back .flash-hint{color:#9FD9E8;}
-.flash-nav{display:flex;gap:10px;justify-content:center;}
-.btn{appearance:none;border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:9px 18px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s ease;}
-.btn:hover{border-color:var(--teal);color:var(--teal);}
-.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff;}
-.btn.primary:hover{background:var(--teal-deep);color:#fff;}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
-.quiz-q{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;box-shadow:var(--shadow);}
-.quiz-q .qn{font-size:.76rem;color:var(--teal);font-weight:700;letter-spacing:.03em;margin-bottom:6px;}
-.quiz-q .qtext{font-family:"Source Serif 4",serif;font-size:1.06rem;margin-bottom:14px;}
-.quiz-opt{display:block;width:100%;text-align:left;background:var(--surface-2);border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit;font-size:.9rem;color:var(--ink);transition:all .15s ease;}
-.quiz-opt:hover{border-color:var(--teal);}
-.quiz-opt.selected{border-color:var(--teal);background:var(--blue-bg);}
-.quiz-opt.correct{border-color:var(--green);background:var(--green-bg);color:var(--green);font-weight:600;}
-.quiz-opt.incorrect{border-color:var(--red);background:var(--red-bg);color:var(--red);font-weight:600;}
-.quiz-opt:disabled{cursor:default;}
-.quiz-explain{margin-top:10px;padding:12px 14px;border-radius:8px;background:var(--surface-2);font-size:.85rem;color:var(--ink-muted);display:none;}
-.quiz-explain.show{display:block;}
-#quiz-result{text-align:center;padding:30px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);display:none;}
-#quiz-result.show{display:block;}
-#quiz-result .score{font-family:"Source Serif 4",serif;font-size:2.4rem;color:var(--teal);margin-bottom:6px;}
-.mmap{display:flex;flex-direction:column;align-items:center;gap:0;}
-.mmap-root{background:var(--teal-dark);color:#EAF6FA;padding:14px 26px;border-radius:12px;font-family:"Source Serif 4",serif;font-weight:600;font-size:1.1rem;margin-bottom:6px;box-shadow:var(--shadow);text-align:center;}
-.mmap-connector{width:2px;height:22px;background:var(--border);}
-.mmap-branches{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;width:100%;margin-top:6px;}
-.mmap-branch{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);}
-.mmap-branch h4{font-size:.95rem;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--surface-2);}
-.mmap-branch ul{margin:0;padding-left:18px;font-size:.83rem;color:var(--ink-muted);}
-.mmap-branch li{margin-bottom:5px;}
-.mmap-branch.c-blue h4{color:var(--blue);} .mmap-branch.c-red h4{color:var(--red);} .mmap-branch.c-green h4{color:var(--green);}
-.mmap-branch.c-amber h4{color:var(--amber);} .mmap-branch.c-purple h4{color:var(--purple);} .mmap-branch.c-teal h4{color:var(--teal);}
-ul.plain{padding-left:20px;margin:0 0 1em;} ul.plain li{margin-bottom:6px;}
-.small-note{font-size:.8rem;color:var(--ink-muted);margin-top:10px;}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-@media(max-width:640px){.two-col{grid-template-columns:1fr;}}
-.footer-note{text-align:center;padding:30px 20px 50px;color:var(--ink-muted);font-size:.8rem;}
-strong{color:var(--ink);}
-
-/* ===== v3 additions ===== */
-main p,main li,.accordion-body,.quiz-explain,.small-note,.lede{text-align:justify;text-justify:inter-word;hyphens:auto;-webkit-hyphens:auto}
-.flash-text{text-align:center}
-:root[data-bg="papel"][data-theme]{--bg:#F6EFE0;--surface:#FFFBF2;--surface-2:#EFE5D0;--border:#E0D3B8}
-:root[data-bg="grafite"][data-theme]{--bg:#17191C;--surface:#202327;--surface-2:#2A2E33;--border:#3A3F46}
-html[data-bg="oceano"] body{background:linear-gradient(180deg,#CFE8F1 0,#F2F6F8 480px) fixed}
-#progress{position:fixed;top:0;left:0;height:3px;width:0;background:var(--teal);z-index:100;transition:width .1s}
-.toolbar{display:flex;justify-content:flex-end;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
-.seg{display:inline-flex;border:1px solid rgba(255,255,255,.4);border-radius:8px;overflow:hidden}
-.seg button{background:transparent;color:#EAF6FA;border:0;padding:6px 12px;font:600 .78rem inherit;font-family:inherit;cursor:pointer}
-.seg button.active{background:#fff;color:#0B3142}
-.swatches{display:flex;gap:8px;align-items:center;color:#9FD9E8;font-size:.74rem}
-.sw{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.55);cursor:pointer;padding:0}
-.sw.active{outline:2px solid #fff;outline-offset:2px}
-.pager{display:flex;justify-content:space-between;gap:10px;margin-top:34px;padding-top:20px;border-top:1px solid var(--border)}
-#totop{position:fixed;right:16px;bottom:18px;width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--teal);box-shadow:var(--shadow);cursor:pointer;font-size:1.1rem;display:none;z-index:60}
-.gl-search{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;margin-bottom:6px}
-.gl-count{font-size:.8rem;color:var(--ink-muted);margin-bottom:14px}
-.gl-letter{font-family:"Source Serif 4",serif;font-size:1.3rem;color:var(--teal);border-bottom:2px solid var(--surface-2);margin:22px 0 10px}
-.gl-item{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--teal);border-radius:var(--radius);padding:12px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
-.gl-item b{font-family:"Source Serif 4",serif;font-size:1.02rem;color:var(--teal)}
-.gl-item p{margin:4px 0 0;font-size:.9rem}
-.mm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:8px}
-.mm-wrap svg{width:100%;height:auto;display:block}
-.mm-wrap .ln{fill:none;stroke:var(--border);stroke-width:3}
-.mm-wrap .mb{cursor:pointer;outline:none;opacity:.62;transition:opacity .2s}
-.mm-wrap .mb.on,.mm-wrap .mb:hover,.mm-wrap .mb:focus{opacity:1}
-.mm-wrap .mb.on .ln{stroke:var(--c);stroke-width:4}
-.mm-wrap .nd{fill:var(--cb);stroke:var(--c);stroke-width:2.5}
-.mm-wrap .mb.on .nd{fill:var(--c)}
-.mm-wrap .tx{fill:var(--c);font:600 16px "IBM Plex Sans",sans-serif;text-anchor:middle;dominant-baseline:central}
-.mm-wrap .mb.on .tx{fill:var(--surface)}
-.mm-wrap .dt{fill:var(--c)}
-.mm-root{fill:var(--teal);} .mm-rt{fill:#fff;font:700 18px "Source Serif 4",serif;text-anchor:middle;dominant-baseline:central}
-.b-blue{--c:var(--blue);--cb:var(--blue-bg)}.b-amber{--c:var(--amber);--cb:var(--amber-bg)}.b-purple{--c:var(--purple);--cb:var(--purple-bg)}
-.b-red{--c:var(--red);--cb:var(--red-bg)}.b-teal{--c:var(--teal);--cb:var(--surface-2)}.b-green{--c:var(--green);--cb:var(--green-bg)}
-.mm-detail{margin-top:14px;background:var(--surface);border:1px solid var(--border);border-left:5px solid var(--c);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow)}
-.mm-detail h4{color:var(--c);margin-bottom:8px}
-.mm-hint{font-size:.82rem;color:var(--ink-muted);margin:0 0 10px;text-align:left!important}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080d14">
+  <meta name="description" content="MEDBI Football — resultados, jogos e competições de futebol.">
+  <title>MEDBI Football</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
 <body>
-<div id="progress"></div><button id="totop" aria-label="Topo">↑</button>
-
-<header class="hero">
-  <div class="container">
-    <div class="toolbar"><div class="swatches"><span data-i18n="bg">Fundo</span><span id="swatches" style="display:flex;gap:8px"></span></div><div class="seg" id="langseg"></div></div>
-    <div class="eyebrow" data-i18n="eyebrow">MÓDULO DE ESTUDO · ATENÇÃO AO PACIENTE CIRÚRGICO</div>
-    <h1 data-i18n="title">Pré e Pós-Operatório</h1>
-    <p class="lede" data-i18n="lede">Fisiologia do estresse cirúrgico, avaliação e preparo pré-operatório por sistemas, e vigilância pós-operatória completa — reunidos e cruzados a partir da bibliografia oficial de cirurgia, sem repetições.</p>
-    <div class="sources">
-      <span class="source-tag">Cirugía, Tomo I — Cap. 18 "Preoperatorio y posoperatorio"</span>
-      <span class="source-tag">Temas de Cirugía, Tomo 1 — Cap. 2 "Tratamientos preoperatorio y posoperatorio"</span>
-    </div>
-  </div>
-</header>
-
-<nav class="tabnav">
-  <div class="tabnav-scroll" id="tabnav"></div>
-</nav>
-
-<main class="container">
-
-<!-- ================= TAB 1: INTRODUÇÃO ================= -->
-<section class="tabpanel" id="tab-intro">
-  <div class="section">
-    <h2>O período perioperatório e a fisiologia do estresse cirúrgico</h2>
-    <div class="box concept">
-      <div class="box-label">🩺 CONCEITO</div>
-      <p>O <strong>perioperatório</strong> é o conjunto de três fases sucessivas e estreitamente relacionadas — <strong>pré-operatório</strong>, <strong>transoperatório</strong> e <strong>pós-operatório</strong> — que se iniciam no primeiro contato do cirurgião com o paciente e terminam quando este recebe alta clínica. Cada fase tem particularidades próprias, mas nenhuma pode ser compreendida isoladamente: uma preparação pré-operatória deficiente compromete diretamente a evolução pós-operatória.</p>
-    </div>
-
-    <h3>Por que existe estresse cirúrgico</h3>
-    <p>Hipócrates definia a saúde como o equilíbrio harmônico entre os elementos do corpo, e a doença como a consequência do desequilíbrio. Claude Bernard formalizou essa ideia como <em>milieu intérieur</em> (meio interno), que Walter Cannon depois batizou de <strong>homeostasia</strong>. Sobre essa base, Hans Selye descreveu a resposta do organismo à agressão como o <strong>"síndrome geral de adaptação"</strong> — e é exatamente esse mecanismo que a cirurgia, como agressão controlada e planejada, desencadeia.</p>
-    <div class="box tip">
-      <div class="box-label">💡 QUANDO COMEÇA O ESTRESSE CIRÚRGICO</div>
-      <p>O estresse cirúrgico não começa no bisturi — começa no instante em que o cirurgião comunica ao paciente a possibilidade de uma operação. A partir daí, o sistema nervoso vegetativo já inicia os mecanismos de controle homeostático que acompanharão todo o perioperatório.</p>
-    </div>
-
-    <h3>A cascata da resposta ao trauma cirúrgico</h3>
-    <p>O trauma tecidual local desencadeia uma <strong>resposta de fase aguda</strong>: polimorfonucleares, macrófagos e células endoteliais do próprio foco liberam citocinas que passam à circulação e mediam uma resposta sistêmica. Paralelamente, o eixo hipotálamo-hipófise-suprarrenal e o sistema nervoso simpático são ativados:</p>
-    <ul class="plain">
-      <li><strong>Glucocorticoides</strong> — ligam-se a receptores citosólicos, formam complexo transportado ao núcleo celular, e alteram a expressão de genes que codificam proteínas envolvidas na resposta metabólica.</li>
-      <li><strong>Catecolaminas</strong> — liberadas pelo sistema simpático, ligam-se a receptores adrenérgicos e modulam proteínas intracelulares efetoras da resposta ao estresse.</li>
-      <li><strong>Citocinas</strong> — atuam junto aos glucocorticoides e catecolaminas modulando a expressão gênica em múltiplos órgãos.</li>
-    </ul>
-    <p>Para sustentar o hipermetabolismo e a gliconeogênese aumentada característicos dessa resposta, os triglicerídeos armazenados são mobilizados e oxidados de forma acelerada. Em pacientes traumatizados mal alimentados, as reservas de proteína e gordura se esgotam rapidamente — essa desnutrição aumenta a suscetibilidade ao estresse adicional de hemorragia, cirurgia e infecção, podendo contribuir para falência orgânica, sepse e morte.</p>
-
-    <div class="box alert">
-      <div class="box-label">⚠️ NEM TODO PACIENTE PRECISA DA MESMA PREPARAÇÃO</div>
-      <p>Um paciente jovem e saudável pode não necessitar de preparação especial — seu organismo já está apto a enfrentar essa agressão. Já em pacientes de idade avançada, ou com afecções cardiovasculares, nutricionais, respiratórias ou endócrinas prévias, a preparação pré-operatória criteriosa é imprescindível: se seus objetivos não forem alcançados, a própria indicação da cirurgia deve ser questionada.</p>
-    </div>
-
-    <h3>Risco cirúrgico: definição e classificação por origem</h3>
-    <p>O <strong>risco cirúrgico</strong> é a probabilidade de que apareçam resultados adversos previsíveis, relacionados à morbidade ou mortalidade, como consequência de uma situação criada no período pré e transoperatório. Pode ser agrupado em três origens:</p>
-    <div class="two-col">
-      <div class="card"><strong>Dependente do meio assistencial</strong><p style="margin-top:6px;">Qualidade dos serviços médicos, disponibilidade de recursos humanos e materiais.</p></div>
-      <div class="card"><strong>Dependente da equipe médica</strong><p style="margin-top:6px;">Atitude, capacidade técnica e conhecimentos do cirurgião, anestesiologista e equipe paramédica.</p></div>
-      <div class="card"><strong>Dependente do paciente</strong><p style="margin-top:6px;">Condições psicofísicas e patológicas — estado de saúde geral, peso, estado nutricional, função respiratória/cardiovascular, hábitos tóxicos, doenças concomitantes.</p></div>
-    </div>
-    <p class="small-note">Procedimentos com tempo cirúrgico prolongado (&gt;3h) também elevam o risco, assim como o sítio operatório e a magnitude da lesão tecidual.</p>
-
-    <h3>Estratificação da mortalidade cirúrgica</h3>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Faixa de mortalidade</th><th>Classificação</th></tr></thead>
-        <tbody>
-          <tr><td>0 – 0,9%</td><td class="hl-green">Cirurgia eletiva padrão</td></tr>
-          <tr><td>1 – 5%</td><td>Significativa</td></tr>
-          <tr><td>5 – 10%</td><td class="hl-amber">Importante</td></tr>
-          <tr><td>&gt;10%</td><td class="hl-amber">Alta</td></tr>
-          <tr><td>&gt;20%</td><td class="hl-red">Muito alta — só se justifica para salvar a vida imediata do paciente</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="box source">
-      <div class="box-label">📚 FONTES DESTA SEÇÃO</div>
-      <p>Temas de Cirugía, Tomo 1, Cap. 2 (fisiologia do estresse cirúrgico, homeostasia, estratificação de mortalidade) · Cirugía, Tomo I, Cap. 18 (conceito de perioperatório e risco cirúrgico por origem).</p>
-    </div>
-  </div>
-</section>
-
-<!-- ================= TAB 2: AVALIAÇÃO PRÉ-OPERATÓRIA POR SISTEMAS ================= -->
-<section class="tabpanel" id="tab-avaliacao">
-  <div class="section">
-    <h2>Avaliação pré-operatória por sistemas</h2>
-    <p>O <strong>pré-operatório mediato</strong> se estende desde a primeira consulta do cirurgião — com anamnese minuciosa e exame físico completo — até 24 horas antes da intervenção. Seu objetivo básico é realizar um diagnóstico acertado, uma avaliação apropriada e uma preparação satisfatória do paciente. A avaliação deve cobrir, sistematicamente, todos os grandes sistemas:</p>
-    <div class="chips">
-      <span class="chip">Cardiovascular</span><span class="chip">Respiratório</span><span class="chip">Renal</span>
-      <span class="chip">Digestivo e hepático</span><span class="chip">Endócrino</span><span class="chip">Hematológico</span>
-      <span class="chip">Imunológico</span><span class="chip">Nutricional</span><span class="chip">Psicológico</span>
-      <span class="chip">Pele</span><span class="chip">Vascular periférico</span>
-    </div>
-
-    <h3>Classificação do estado físico (ASA)</h3>
-    <p>A escala da <em>American Society of Anesthesiologists</em> reflete o estado funcional e a comorbidade, sendo preditor seguro de morbimortalidade pós-operatória — considerada superior à idade isolada como preditor de resultado cirúrgico.</p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Classe</th><th>Descrição</th><th>Mortalidade associada</th></tr></thead>
-        <tbody>
-          <tr><td>I</td><td>Paciente saudável normal</td><td>0%</td></tr>
-          <tr><td>II</td><td>Doença sistêmica leve</td><td>0,17%</td></tr>
-          <tr><td>III</td><td>Doença sistêmica grave, não incapacitante</td><td>0,6%</td></tr>
-          <tr><td class="hl-amber">IV</td><td>Doença sistêmica incapacitante, ameaça constante à vida</td><td>4,3%</td></tr>
-          <tr><td class="hl-red">V</td><td>Moribundo, não se espera sobrevida de 24h com ou sem cirurgia</td><td>10%</td></tr>
-          <tr><td>-e</td><td colspan="2">Sufixo que indica emergência, para qualquer classe da ASA</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="small-note">Outros índices de risco multifatorial incluem os critérios de Goldman (risco cardíaco) e o índice POSSUM (modelos fisiológico e de gravidade cirúrgica).</p>
-
-    <h3>Avaliação cardiovascular</h3>
-    <p>A doença cardiovascular é a primeira causa de morte em países desenvolvidos, e um dos fatores de risco mais comuns na mortalidade perioperatória. Pacientes jovens e sadios necessitam apenas de exame clínico; acima de 45 anos, associa-se rotineiramente um eletrocardiograma. Pacientes com doença cardiovascular crônica conhecida (hipertensão, insuficiência congestiva, arritmias, isquemia) requerem avaliação e controle prévios por clínico ou cardiologista.</p>
-    <div class="box alert">
-      <div class="box-label">⚠️ HIPERTENSÃO E INFARTO PRÉVIO</div>
-      <p>Cirurgia eletiva deve ser adiada se o paciente estiver descompensado com PA diastólica &gt;100 mmHg, pelo risco significativo de infarto do miocárdio ou AVC. Pacientes com IAM prévio têm risco cardiovascular estimado de 0-37% acima daqueles sem esse antecedente — recomenda-se adiar a cirurgia eletiva por 4-6 semanas após o IAM, sendo o tempo ideal considerado 6 meses.</p>
-    </div>
-
-    <h3>Avaliação respiratória</h3>
-    <p>Suficiente o exame clínico em pacientes sadios sem antecedentes respiratórios. Pacientes com DPOC requerem avaliação especializada cuidadosa — risco aumentado de complicações respiratórias intra e pós-operatórias, muitas vezes exigindo broncodilatadores, nebulização, antibióticos e fisioterapia prévia. Se a dispneia é sintoma predominante, realizar provas de função respiratória e gasometria arterial pré-operatórias.</p>
-    <ul class="plain">
-      <li>Infecções respiratórias altas/baixas: tratar antes da cirurgia; postergar a intervenção por 2 semanas após cessação dos sintomas.</li>
-      <li>Asma brônquica: risco de broncoespasmo agudo à laringoscopia/intubação — idealmente operar durante remissão dos sintomas; pacientes com corticoide crônico &gt;5mg/dia de prednisona precisam de hidrocortisona IV perioperatória para evitar supressão adrenal.</li>
-      <li>Tabagismo: aumenta em até 6× o risco de complicações pós-operatórias com consumo &gt;10 cigarros/dia. Cessação recomendada desde a primeira consulta, idealmente ≥6 semanas antes da cirurgia (mínimo de 7 dias para eliminar o efeito rebote sobre a via aérea superior).</li>
-      <li>Avaliação da função pulmonar completa (VEF1, capacidade vital forçada, capacidade de difusão de CO) indicada em cirurgia torácica com ventilação seletiva, ressecções pulmonares maiores, cirurgia abdominal/torácica maior em &gt;60 anos, ASA≥II com dependência funcional e cardiopatia congestiva.</li>
-    </ul>
-
-    <h3>Avaliação renal</h3>
-    <p>Pacientes sadios: exame de urina e creatinina em casos selecionados. Disfunção renal prévia predispõe a falência renal pós-operatória (mais comum após cirurgia cardíaca ou aórtica). Anemia, hipertensão, doença isquêmica cardíaca e diabetes agravam o quadro. Em doença renal avançada, recomenda-se diálise antes da cirurgia (para otimizar volume e potássio) e no dia seguinte à intervenção.</p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Tipo de profilaxia</th><th>Medida</th></tr></thead>
-        <tbody>
-          <tr><td>Pré-renal</td><td>Profilaxia da hipotensão arterial e assistência adequada ao choque</td></tr>
-          <tr><td>Renal</td><td>Uso criterioso de drogas e antibióticos nefrotóxicos</td></tr>
-          <tr><td>Pós-renal</td><td>Técnica cirúrgica cuidadosa em zonas de conflito; atenção a estados de retenção por prostatismo</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h3>Avaliação digestiva e hepática</h3>
-    <p>O estado bucal e a ausência de focos sépticos orais são frequentemente negligenciados, mas representam fator de risco importante para complicações infecciosas pós-operatórias — pacientes submetidos a anestesia geral com intubação devem ser avaliados por odontologia. Disfagia, dispepsia, dor abdominal, diarreia, vômitos, icterícia e visceromegalia exigem avaliação integral antes da cirurgia.</p>
-    <p>Pacientes com disfunção hepática são grupo de alto risco anestésico. Avaliação inicial busca ictericia e sinais de falência hepática (telangiectasias, circulação colateral, eritema palmar, ascite, encefalopatia). Solicitar transaminases, DHL, bilirrubina, fosfatase alcalina, albumina, coagulograma, sorologias virais, fibrinogênio e proteínas totais. Pacientes cirróticos devem ser classificados por <strong>Child-Pugh</strong>; fatores que pioram o resultado incluem caráter de urgência da cirurgia, TP &gt;3s, resistência à correção com vitamina K, e infecção associada.</p>
-
-    <h3>Avaliação endócrina</h3>
-    <div class="accordion">
-      <div class="accordion-head" onclick="toggleAcc(this)"><span>Diabetes mellitus</span><span class="chev">▸</span></div>
-      <div class="accordion-body">
-        <p>Avaliar controle glicêmico e complicações associadas (cardiovasculares, renais, retinianas, neuropatia). Solicitar glicemia de jejum, hemoglobina glicosilada, eletrólitos, proteinúria e ECG. Meta de controle: glicemia entre 4-8 mmol/L. Não insulino-dependentes: suspender sulfonilureias 48h antes (risco de hipoglicemia intraoperatória); suspender metformina (risco de acidose lática em insuficiência renal). Insulino-dependentes: manter a dose de ação prolongada no dia da cirurgia, substituindo pela manhã por dose menor de insulina intermediária. Preferir operar diabéticos no início da manhã.</p>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="MEDBI Football início">
+        <span class="brand-mark">M<span>F</span></span>
+        <span class="brand-copy"><strong>MEDBI</strong><small>FOOTBALL</small></span>
+      </a>
+      <div class="top-actions">
+        <span class="connection" id="connectionStatus"><i></i> Online</span>
+        <button class="icon-button" id="searchToggle" aria-label="Pesquisar" title="Pesquisar">⌕</button>
+        <button class="icon-button" id="refreshButton" aria-label="Atualizar" title="Atualizar">↻</button>
       </div>
-    </div>
-    <div class="accordion">
-      <div class="accordion-head" onclick="toggleAcc(this)"><span>Doença tireoidiana</span><span class="chev">▸</span></div>
-      <div class="accordion-body">
-        <p>Hipertireoidismo: adiar a cirurgia até estado eutireoideo. Manter propiltiouracil/metimazol e betabloqueadores/digoxina até o dia da cirurgia (≥4h antes). Risco de tempestade tireoidiana pode exigir combinação de bloqueadores adrenérgicos e esteroides. Hipotireoidismo recém-diagnosticado geralmente não requer tratamento prévio, mas há maior sensibilidade a anestésicos/narcóticos; casos graves associam-se a disfunção miocárdica, coagulopatia, desequilíbrio hidroeletrolítico e hipoglicemia.</p>
-      </div>
-    </div>
-    <div class="accordion">
-      <div class="accordion-head" onclick="toggleAcc(this)"><span>Uso crônico de corticoides</span><span class="chev">▸</span></div>
-      <div class="accordion-body">
-        <p>Prednisona &gt;5mg/dia (ou equivalente) por &gt;2 semanas no último ano — ou &gt;10mg nos últimos 3 meses (segundo alguns autores) — é fator de risco para resposta adrenal anormal em cirurgia maior. Suplementação sugerida conforme porte cirúrgico:</p>
-        <div class="table-wrap" style="margin-top:8px;">
-          <table>
-            <thead><tr><th>Porte cirúrgico</th><th>Exemplo</th><th>Hidrocortisona</th></tr></thead>
-            <tbody>
-              <tr><td>Menor</td><td>Herniorrafia</td><td>~25 mg</td></tr>
-              <tr><td>Intermediário</td><td>Colecistectomia convencional</td><td>50-75 mg por 1-2 dias</td></tr>
-              <tr><td>Maior</td><td>Ressecção gástrica/colônica</td><td>100-150 mg por 2-3 dias</td></tr>
-            </tbody>
-          </table>
+    </header>
+
+    <main id="mainContent">
+      <section class="search-panel hidden" id="searchPanel">
+        <input id="searchInput" type="search" placeholder="Pesquisar equipa ou competição…" autocomplete="off">
+      </section>
+
+      <section class="welcome-row">
+        <div>
+          <p class="eyebrow" id="todayLabel">FUTEBOL MUNDIAL</p>
+          <h1>Resultados <span>em direto</span></h1>
+          <p class="muted">Acompanha o futebol, onde estiveres.</p>
         </div>
-        <p class="small-note">Se a via oral for suspensa, substituir a prednisona por hidrocortisona IV 100mg/dia a cada 6h, reduzindo progressivamente até retorno à via oral.</p>
-      </div>
-    </div>
-    <div class="accordion">
-      <div class="accordion-head" onclick="toggleAcc(this)"><span>Feocromocitoma</span><span class="chev">▸</span></div>
-      <div class="accordion-body">
-        <p>Requer preparo pré-operatório com combinação de α- e β-bloqueadores adrenérgicos por 1-2 semanas antes da cirurgia, prevenindo crise hipertensiva intraoperatória ou colapso cardiovascular por hipotensão.</p>
-      </div>
-    </div>
+        <div class="live-pulse"><i></i> LIVE</div>
+      </section>
 
-    <h3>Avaliação hematológica</h3>
-    <p>Investigar anemia (perda de energia, peso, dispneia, palpitações, mucosas pálidas) com hemograma, reticulócitos e ferro sérico. Hemoglobina idealmente &gt;8 g/dL antes da cirurgia, com correção prévia se inferior. Avaliar coagulação: história de coagulopatias, gengivorragia, menorragia, hematomas fáceis, hepatopatia/nefropatia, petéquias, hematúria, uso de AAS/anticoagulantes/AINEs/antiagregantes — indicam necessidade de coagulograma completo e, se alterado, correção com hematologista.</p>
+      <nav class="filter-tabs" aria-label="Filtro de jogos">
+        <button class="filter-tab active" data-filter="all">Todos</button>
+        <button class="filter-tab" data-filter="live">Ao vivo</button>
+        <button class="filter-tab" data-filter="finished">Terminados</button>
+        <button class="filter-tab" data-filter="scheduled">Próximos</button>
+      </nav>
 
-    <h3>Avaliação do estado imunológico</h3>
-    <p>Pacientes imunossuprimidos (quimioterapia, imunossupressores em transplantados, HIV) exigem avaliação completa (antecedentes, fármacos, duração do tratamento, sinais de disfunção orgânica), hemograma com diferencial, função hepática/renal, ECG, RX de tórax quando indicado, tratamento de focos infecciosos (cateteres, sondas) e antibioticoprofilaxia obrigatória independente do tipo de cirurgia.</p>
-
-    <div class="box source">
-      <div class="box-label">📚 FONTE DESTA SEÇÃO</div>
-      <p>Cirugía, Tomo I, Cap. 18 "Preoperatorio y posoperatorio" (Tabela 18.1 e avaliação sistemática por órgãos e sistemas).</p>
-    </div>
-  </div>
-</section>
-
-<!-- ================= TAB 3: EXAMES, NUTRIÇÃO E POPULAÇÕES ESPECIAIS ================= -->
-<section class="tabpanel" id="tab-exames">
-  <div class="section">
-    <h2>Exames complementares, estado nutricional e populações especiais</h2>
-
-    <div class="box alert">
-      <div class="box-label">⚠️ EVITAR EXAMES DESNECESSÁRIOS</div>
-      <p>Estudos mostram <strong>ausência de benefício</strong> em solicitar exames completos quando não justificados pela anamnese e exame físico. Jovens saudáveis &lt;45 anos submetidos a cirurgia menor não requerem investigação de rotina (exceto hemoglobina em mulheres menstruantes).</p>
-    </div>
-
-    <h3>Exames gerais recomendados em cirurgia maior eletiva</h3>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Exame</th><th>Indicação principal</th></tr></thead>
-        <tbody>
-          <tr><td>Hemograma completo</td><td>Obrigatório em cardiopatas, pneumopatas, nefropatas; avalia anemia</td></tr>
-          <tr><td>Coagulograma</td><td>Icterícia/falência hepática, coagulopatias conhecidas, uso de anticoagulantes, transfusão maciça (&gt;4 unidades)</td></tr>
-          <tr><td>Grupo e fator</td><td>Choque hipovolêmico, hemorragia ativa/potencial, cirurgia maior eletiva conforme protocolo</td></tr>
-          <tr><td>Ureia e eletrólitos</td><td>&gt;45 anos, cardiopatas/pneumopatas/nefropatas, uso de nefrotóxicos, oclusão intestinal, desidratação, choque</td></tr>
-          <tr><td>Glicemia</td><td>&gt;45 anos ou antecedente de diabetes (&gt;11 mmol/L diagnóstica; &gt;8 mmol/L sugestiva)</td></tr>
-          <tr><td>Provas de função hepática</td><td>Sintomas hepatobiliares, nefropatia, etilismo, suspeita de neoplasia disseminada</td></tr>
-          <tr><td>Amilase</td><td>Dor epigástrica/abdome superior de causa não esclarecida</td></tr>
-          <tr><td>β-hCG</td><td>Mulheres em idade reprodutiva com dor abdominal ou suspeita de gravidez</td></tr>
-          <tr><td>Exame de urina</td><td>Rastreio de diabetes, infecção urinária, hematúria</td></tr>
-          <tr><td>Eletrocardiograma</td><td>&gt;45 anos, ou jovens com dor epigástrica, asma, cardiopatia ou história familiar relevante</td></tr>
-          <tr><td>Radiografia de tórax</td><td>Cirurgia eletiva, sobretudo com antecedente cardíaco/respiratório (utilidade como rotina é questionada pela evidência atual)</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h3>Estado nutricional</h3>
-    <p>A desnutrição, tanto por déficit quanto por excesso, compromete negativamente a cicatrização e a imunocompetência. Sinais de alerta: perda &gt;10% do peso habitual em 6 meses (ou &gt;5% em 1 mês) — dado frequentemente subestimado —, atrofia muscular, caquexia, má dentição, ascite, edema periférico. Avaliar albumina e competência imunológica em conjunto. Em desnutrição grave, a nutrição parenteral pré-operatória por 7-10 dias associa-se a redução de 30-40% nas complicações pós-operatórias.</p>
-
-    <h3>Pacientes idosos</h3>
-    <p>Fatores etários respondem por até <strong>75% da mortalidade perioperatória</strong> não determinada por outras causas, sendo mais comum em cirurgia de urgência. A idade isoladamente <strong>não</strong> deve ser contraindicação à cirurgia na ausência de outros fatores de risco — a classificação ASA é preditor melhor que a idade isolada.</p>
-    <div class="box tip">
-      <div class="box-label">💡 CINCO FATORES CRÍTICOS PARA CIRURGIA MAIOR ELETIVA NO IDOSO</div>
-      <p>1) Preparo pré-operatório cuidadoso e otimização do estado fisiológico. 2) Minimizar jejum, inatividade perioperatória e estresse de hipotermia/hipoxemia/dor. 3) Cuidado meticuloso para evitar desequilíbrio hidroeletrolítico e farmacoterapia inadequada. 4) Julgamento e técnica cirúrgica cautelosos. 5) Otimização da função física e cognitiva.</p>
-      <p style="margin-top:8px;">Abordagem multidisciplinar recomendada: anestesiologista, clínico, geriatra, reabilitador, assistente social e médico de atenção primária.</p>
-    </div>
-    <p class="small-note">Complementares de rotina no idoso: ECG, RX de tórax, hemograma, glicemia, ureia e albumina sérica.</p>
-
-    <h3>Gestantes</h3>
-    <p>Evitar cirurgia eletiva no <strong>primeiro trimestre</strong> (risco de aborto pela anestesia e efeitos teratogênicos). Momento ideal, se necessária intervenção: <strong>segundo trimestre</strong>, sempre com avaliação conjunta de obstetra e anestesiologista. No terceiro trimestre, maior risco de aspiração de conteúdo gástrico e hipotensão por compressão aortocaval em decúbito supino.</p>
-
-    <h3>Estado da pele</h3>
-    <p>Lesões inflamatórias agudas ou crônicas infectadas — sobretudo próximas ao sítio operatório — são porta de entrada para germes oportunistas. Cirurgia eletiva deve ser adiada até resolução completa de qualquer processo infeccioso cutâneo (celulite, abscesso) no sítio ou proximidades, incluindo possíveis locais de inserção de cateteres.</p>
-
-    <h3>Estado psicológico</h3>
-    <p>"O que tenho? O que farão comigo? Como ficarei?" — as três perguntas que todo paciente se faz ao saber que será operado. O objetivo do cirurgião é criar clima adequado para responder a essas dúvidas com trato amável, informação oportuna e veraz, em linguagem clara. Consulta apressada, avaliação insuficiente e informação inadequada (escassa ou excessiva) prejudicam a adaptação psicológica ao estresse da decisão cirúrgica.</p>
-
-    <div class="box source">
-      <div class="box-label">📚 FONTE DESTA SEÇÃO</div>
-      <p>Cirugía, Tomo I, Cap. 18 (exames complementares gerais, nutrição, idosos, gestantes, pele, estado psicológico).</p>
-    </div>
-  </div>
-</section>
-
-<!-- ================= TAB 4: PREPARO E MEDICAÇÕES ================= -->
-<section class="tabpanel" id="tab-preparo">
-  <div class="section">
-    <h2>Preparo pré-operatório imediato e manejo de medicações</h2>
-
-    <h3>Revisão de medicamentos em uso</h3>
-    <p>Betabloqueadores, antiarrítmicos, broncodilatadores/nebulizadores, antiepilépticos, anti-hipertensivos e psicofármacos geralmente podem ser mantidos, inclusive na manhã da cirurgia.</p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Medicamento</th><th>Conduta pré-operatória</th></tr></thead>
-        <tbody>
-          <tr><td>AAS e clopidogrel</td><td>Suspender 7-10 dias antes (exceto se indicação de IAM/AVC prévio — avaliar risco-benefício com o cirurgião)</td></tr>
-          <tr><td>AINEs</td><td>Suspender pelo menos 3 dias antes</td></tr>
-          <tr><td>Varfarina</td><td>Suspender 3-4 dias antes; ponte com heparina subcutânea (5.000U) ou HBPM; alternativa: infusão IV de heparina 800-1000 U/h, interrompida 4-6h antes da cirurgia e reiniciada 12h após</td></tr>
-          <tr><td>Estrogênios/anticoncepcionais orais</td><td>Suspender ≥4 semanas antes (risco de tromboembolismo); progesterona isolada e terapia de reposição hormonal não precisam ser suspensas</td></tr>
-          <tr><td>Inibidores da MAO</td><td>Suspender ≥2 semanas antes</td></tr>
-          <tr><td>Fitoterápicos (alho, efedra, ginkgo, valeriana)</td><td>Suspender em média 7 dias antes</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="small-note">Monitorização de anticoagulação: TTPa alvo entre 1,5-2,5×. Em cirurgia de emergência sob varfarina, reverter com vitamina K e plasma fresco congelado. Após episódio de tromboembolia arterial/venosa, adiar cirurgia eletiva além de 4 semanas quando possível.</p>
-
-    <h3>Jejum e dieta</h3>
-    <p>Dieta normal até 12h antes da cirurgia (para cirurgia fora do tubo digestivo, ou neste sem ressecções/suturas); depois, apenas líquidos açucarados até 2h antes. Estabelecer via intravenosa quando necessário aporte calórico. Jejum mínimo recomendado: <strong>4 horas</strong> antes da intervenção.</p>
-
-    <h3>Preparo intestinal e vesical</h3>
-    <p>Catárticos e enemas evacuantes são cada vez menos empregados, exceto indicação precisa — evidências mostram que, longe de trazer benefício, podem ser prejudiciais. Preparo de cólon só é necessário se houver possibilidade de ressecção colônica planejada.</p>
-    <p>Prefere-se a micção espontânea antes de cirurgias &lt;2h. Sondagem vesical pré-operatória indicada quando há impedimento ao esvaziamento vesical (ex.: afecções prostáticas) ou necessidade de controle rigoroso da diurese; em cirurgia eletiva maior, prefere-se sondar após a indução anestésica (menos desconforto, menor risco infeccioso por permanência prolongada).</p>
-
-    <h3>Preparo da pele</h3>
-    <p>Banho amplo com antisséptico (triclosan ou povidona-iodo) antes da intervenção. Se necessária remoção de pelos, usar <strong>tricotomia elétrica no mesmo dia</strong> da cirurgia — <strong>proibido o uso de lâminas de barbear na véspera</strong>, pelas microabrasões que produzem e a colonização bacteriana que favorece contaminação da ferida.</p>
-
-    <h3>Profilaxia da trombose venosa profunda</h3>
-    <p>Todo paciente cirúrgico deve ser avaliado quanto ao risco de tromboembolismo venoso. Fatores de risco: idade, tipo de cirurgia, tromboembolia prévia, câncer, obesidade, insuficiência venosa periférica, disfunção cardíaca, cateter venoso permanente, doença inflamatória intestinal, síndrome nefrótica, gravidez, uso de estrogênios.</p>
-    <p><strong>Medidas profiláticas:</strong> heparina não fracionada ou de baixo peso molecular (dose inicial 2h antes da cirurgia), sistemas de compressão pneumática intermitente, meias elásticas, deambulação precoce — sistemas de compressão devem ser colocados antes da indução anestésica.</p>
-
-    <h3>Profilaxia antibiótica</h3>
-    <p>Baseada nos germes patogênicos prováveis e no tipo de ferida (limpa, limpa-contaminada, contaminada/infectada), além de alergias conhecidas, caráter eletivo/urgente, tipo de acesso (convencional/minimamente invasivo) e uso de material protético.</p>
-    <div class="box value">
-      <div class="box-label">📏 REGRA PRÁTICA</div>
-      <p>Administrar o antibiótico <strong>30-60 minutos antes</strong> da incisão. Repetir a dose se a cirurgia se estender além de 3h ou o dobro da meia-vida do fármaco. A profilaxia <strong>não deve ultrapassar 24h</strong> pós-operatórias. Antibióticos mais usados: cefalosporinas de 1ª/2ª geração (seguir protocolos institucionais).</p>
-    </div>
-
-    <h3>Checklist final do pré-operatório imediato</h3>
-    <ul class="plain">
-      <li>Paciente adequadamente reanimado</li>
-      <li>Comorbidades corretamente avaliadas e corrigidas</li>
-      <li>Exames complementares realizados e revisados pelo cirurgião</li>
-      <li>Consentimento informado obtido</li>
-      <li>Profilaxia de TVP executada</li>
-      <li>Profilaxia antibiótica indicada no momento correto</li>
-      <li>Anestesiologistas e cirurgiões informados de qualquer problema</li>
-      <li>Provas cruzadas/reserva de sangue solicitadas quando indicado, com consentimento do paciente</li>
-      <li>Jejum de pelo menos 4 horas confirmado</li>
-      <li>Cateter urinário inserido (se indicado) ou bexiga esvaziada imediatamente antes</li>
-    </ul>
-
-    <h3>Pré-operatório em cirurgia de urgência</h3>
-    <p>Grupo especial com tempo reduzido para as medidas específicas. Em emergências com risco de vida (trauma), seguem-se os protocolos próprios de avaliação do politraumatizado. Quando há um tempo pré-operatório prudencial, priorizam-se: exames humorais/imagem essenciais, suporte vital básico/avançado, correção de distúrbios hidroeletrolíticos e reposição de hemoglobina.</p>
-
-    <h3>Consentimento informado</h3>
-    <p>Permissão outorgada ao cirurgião para realizar intervenção diagnóstica ou terapêutica, após informação completa sobre condição, vantagens do tratamento, riscos e alternativas — respeitando o princípio ético da autonomia do paciente.</p>
-    <div class="two-col">
-      <div class="card"><strong>Implícito</strong><p style="margin-top:6px;">Presume-se consentimento para estudos preliminares (laboratório, imagem, ECG).</p></div>
-      <div class="card"><strong>Escrito</strong><p style="margin-top:6px;">Obrigatório para intervenções com riscos/efeitos colaterais significativos: cirurgias, anestesia, procedimentos invasivos.</p></div>
-      <div class="card"><strong>Verbal</strong><p style="margin-top:6px;">Reservado à ausência do escrito; deve ser documentado por escrito na história clínica, idealmente diante de testemunha.</p></div>
-    </div>
-    <p class="small-note">Em emergências com risco de vida e comprometimento cognitivo, o tratamento pode ser instaurado sem consentimento prévio. Em incapazes mentais e menores, deve-se obter aprovação de pais/responsável legal.</p>
-
-    <div class="box source">
-      <div class="box-label">📚 FONTE DESTA SEÇÃO</div>
-      <p>Cirugía, Tomo I, Cap. 18 (revisão de medicamentos, jejum, preparo de pele/intestino, profilaxias, checklist, consentimento informado).</p>
-    </div>
-  </div>
-</section>
-
-<!-- ================= TAB 5: PÓS-OPERATÓRIO IMEDIATO ================= -->
-<section class="tabpanel" id="tab-posimediato">
-  <div class="section">
-    <h2>Pós-operatório imediato</h2>
-    <div class="box concept">
-      <div class="box-label">🩺 DEFINIÇÃO</div>
-      <p>O pós-operatório inicia-se ao término da cirurgia e se estende até a alta clínica. É classificado, para fins didáticos, em <strong>imediato</strong> (primeiras 24h) e <strong>mediato</strong> (até a recuperação completa), e evolutivamente em <strong>não complicado</strong> ou <strong>complicado</strong>. Sua duração varia de cerca de 1 semana (cirurgia menor) a meses (intervenções complexas).</p>
-    </div>
-    <p>A vigilância é estreita e intensiva nas primeiras 24h, podendo estender-se por dias em operações complexas. O objetivo é detectar precocemente alterações clínicas ou metabólicas que sinalizem complicação, permitindo intervenção urgente.</p>
-
-    <h3>Vigilância hemodinâmica</h3>
-    <p>A pressão arterial é parâmetro fundamental — valores extremos indicam alteração fisiológica importante. Monitorização não invasiva (oscilotonometria, esfigmomanometria com Doppler, fotopletismografia digital) ou invasiva conforme o caso. Temperatura, pulso e frequência respiratória devem ser vigiados periodicamente em conjunto.</p>
-
-    <h3>Vigilância respiratória</h3>
-    <p>Em cirurgias menores com despertar rápido, o tubo endotraqueal pode ser retirado ainda na sala de operações. Pacientes críticos frequentemente necessitam ventilação mecânica — monitorizar gases arteriais intermitentemente é o padrão, útil mesmo sem insuficiência respiratória evidente, pois detecta alterações ácido-básicas, sepse, trauma grave ou sobredosagem medicamentosa.</p>
-
-    <h3>Reposição hídrica e nutrição</h3>
-    <p>Exceto em cirurgia ambulatorial/videolaparoscópica (alimentação oral no mesmo dia), o habitual é que o paciente não receba nada por via oral nesse período, repondo volume por via parenteral.</p>
-    <ul class="plain">
-      <li>Corrigir primeiro qualquer déficit de perdas pré/transoperatórias.</li>
-      <li>Iniciar com soluções isotônicas; após 24h, adicionar dextrose se a via enteral ainda não é tolerada.</li>
-      <li>Não administrar potássio até que a excreção urinária esteja comprovadamente adequada.</li>
-      <li>Se já houver peristaltismo e a cirurgia permitir, iniciar líquidos orais em pequena quantidade.</li>
-      <li>Em pós-operatório não complicado, não é necessário revisar eletrólitos rotineiramente nos primeiros dias.</li>
-    </ul>
-
-    <h3>Vigilância renal</h3>
-    <p>Sonda vesical de Foley útil em pós-operatório complicado para quantificar diurese horária. Diurese normal aceita: <strong>0,5 mL/kg/h</strong> no adulto. É comum observar oligúria fisiológica transitória neste período.</p>
-
-    <h3>Controle de sondas e drenos</h3>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Dispositivo</th><th>Manejo no pós-operatório imediato</th></tr></thead>
-        <tbody>
-          <tr><td>Sonda vesical</td><td>Conectada a bolsa coletora, mede diurese</td></tr>
-          <tr><td>Sonda de Levine (nasogástrica)</td><td>Conectada a frasco, aspirações periódicas a cada 3h</td></tr>
-          <tr><td>Sonda de Kehr ("em T", vias biliares)</td><td>Aberta a recipiente, drenagem medida diariamente</td></tr>
-          <tr><td>Sondas pleurais</td><td>Conexão imediata a drenagem torácica selada sob água ou equipo tipo Overholt</td></tr>
-          <tr><td>Drenos abdominais</td><td>Penrose, drenos abertos de gaze, drenos percutâneos — não manter por mais de 72h como regra geral</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h3>Posição no leito</h3>
-    <p>Decúbito supino sem travesseiro, com a cabeça lateralizada, enquanto o paciente não estiver recuperado da anestesia (previne broncoaspiração por vômito). Recuperado, pode assumir posição de Fowler. Após raquianestesia: manter decúbito supino sem travesseiro por 24h.</p>
-
-    <h3>Analgesia pós-operatória</h3>
-    <div class="box concept">
-      <div class="box-label">🩺 DEFINIÇÃO (IASP)</div>
-      <p>A Associação Internacional para o Estudo da Dor define dor como <em>"experiência sensorial e emocional desagradável, associada a dano tecidual real ou potencial"</em>. O tratamento e a prevenção da dor pós-operatória são um dos pilares mais importantes do cuidado pós-cirúrgico.</p>
-    </div>
-    <div class="box alert">
-      <div class="box-label">⚠️ MITOS QUE ATRAPALHAM O TRATAMENTO DA DOR</div>
-      <p>"A dor é consequência inevitável da cirurgia" · "a dor pós-operatória é desagradável, mas inofensiva" · "aliviar a dor pode mascarar sinais de complicação e por isso é perigoso" · "o paciente não tem realmente dor, apenas se queixa, e se alguns suportam, todos deveriam suportar". Nenhuma dessas ideias se sustenta na prática atual — a analgesia adequada não mascara complicações verdadeiras e deve ser tratada ativamente.</p>
-    </div>
-    <p>A <strong>analgesia preventiva</strong> visa evitar o próprio aparecimento da dor, bloqueando os mecanismos de geração/transmissão antes que se instalem — inclusive prevenindo a hiperalgesia secundária em áreas não operadas. A dor pós-operatória é previsível: mais aguda nas primeiras 24-48h, diminuindo progressivamente até se tornar irrelevante em cerca de 1 semana.</p>
-    <p class="small-note">Analgésicos parenterais mais usados: AINEs (diclofenaco, cetoprofeno) e opioides — estes últimos permanecem a base do tratamento da dor pós-operatória, apesar da ampla variedade disponível.</p>
-
-    <h3>Exames complementares pós-operatórios</h3>
-    <p>Dependem do tipo de cirurgia e das características do paciente. Em cirurgias pouco complexas, exames de rotina raramente são úteis. Hemoglobina/hematócrito de urgência são indicados especialmente após perdas sanguíneas importantes no intraoperatório. Em paciente crítico ou cirurgia de grande porte: hemogasometria, ECG e radiografia são úteis.</p>
-
-    <div class="box source">
-      <div class="box-label">📚 FONTE DESTA SEÇÃO</div>
-      <p>Cirugía, Tomo I, Cap. 18 "Preoperatorio y posoperatorio" (vigilância pós-operatória imediata e manejo de dispositivos).</p>
-    </div>
-  </div>
-</section>
-
-<!-- ================= TAB 6: PÓS-OPERATÓRIO MEDIATO E COMPLICAÇÕES ================= -->
-<section class="tabpanel" id="tab-posmediato">
-  <div class="section">
-    <h2>Pós-operatório mediato e sinais de alarme</h2>
-
-    <h3>Vigilância hemodinâmica no pós-operatório mediato</h3>
-    <p>Temperatura, pulso, pressão arterial e respiração são registrados na folha de sinais vitais — frequência de 8-12h no pós-operatório não complicado, podendo chegar a cada 1h no paciente crítico.</p>
-
-    <h3>Retirada programada de sondas e drenos</h3>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Dispositivo</th><th>Momento de retirada</th></tr></thead>
-        <tbody>
-          <tr><td>Sonda vesical</td><td>Geralmente em 24h, conforme características do paciente</td></tr>
-          <tr><td>Sonda de Levine</td><td>Geralmente em 24h; permanência maior é controversa — retirar quando restabelecida a motilidade intestinal</td></tr>
-          <tr><td>Sonda de Kehr</td><td>Somente se colangiografia pela própria sonda não mostrar alterações, e nunca antes de 1 mês</td></tr>
-          <tr><td>Sondas pleurais</td><td>Tempo variável conforme a operação; cuidado extremo para evitar obstrução</td></tr>
-          <tr><td>Drenos abdominais</td><td>Mobilizados às 24h; geralmente retirados entre 48-72h</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <h3>Ferida operatória</h3>
-    <p>Observação diária, buscando sinais de inflamação sugestivos de infecção. Pode permanecer descoberta, com curativo apenas com álcool. Pontos de pele simples: retirada alternada a partir do 7º dia (10º dia em zonas de máxima tensão); pontos metálicos em regiões com plano de sustentação (ex.: pescoço) podem ser retirados em 48h.</p>
-
-    <h3>Mobilização precoce</h3>
-    <p>Fundamental como profilaxia de tromboflebite de membros inferiores (e consequente tromboembolismo pulmonar) e de complicações respiratórias (atelectasias, broncopneumonias), além de favorecer o retorno do peristaltismo. Quando a mobilização plena não é possível, orientar movimentação dos membros inferiores várias vezes ao dia e respiração profunda/tosse para eliminar secreções.</p>
-
-    <h3>Nutrição no pós-operatório mediato</h3>
-    <p>Iniciar precocemente na maioria dos pacientes (por volta de 24h), por via oral, começando por líquidos, avançando gradualmente para dieta branda e depois livre. A via oral favorece o peristaltismo e oferece proteção de barreira intestinal e suporte imunológico — quando inviável, manter via parenteral.</p>
-
-    <h3>Sinais de alarme para complicação pós-operatória</h3>
-    <div class="box alert">
-      <div class="box-label">⚠️ NUNCA SUBESTIMAR ESTES ACHADOS</div>
-      <p>Avaliações clínicas periódicas visam detectar precocemente sinais que sugiram complicação:</p>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Sinal</th><th>Interpretação clínica</th></tr></thead>
-        <tbody>
-          <tr><td>Taquicardia</td><td>Pulso cheio e amplo, sem hipertensão/choque, após descartar causa medicamentosa: pensar em complicação embólica ou sepse oculta</td></tr>
-          <tr><td>Febre</td><td>Frequente mas não constante; valiosa quando presente — tipicamente entre 38-39°C</td></tr>
-          <tr><td>Íleo paralítico persistente</td><td>Além de 72h do pós-operatório, alerta para complicação — investigar causa imediatamente</td></tr>
-          <tr><td>Alterações neurológicas</td><td>Confusão costuma ser o primeiro sinal de sepse; também inquietude, ansiedade, incoerência</td></tr>
-          <tr><td>Polipneia</td><td>Sinal de sepse precoce; episódio brusco sugere tromboembolismo pulmonar, mas também ocorre em sepse intra-abdominal</td></tr>
-          <tr><td>Reação peritoneal</td><td>De grande valor quando presente, mas a dor abdominal no operado pode ser sutil (falso-negativo) — sua ausência não a descarta</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="box source">
-      <div class="box-label">📚 FONTE DESTA SEÇÃO</div>
-      <p>Cirugía, Tomo I, Cap. 18 (pós-operatório mediato, ferida operatória, mobilização, sinais de alarme).</p>
-    </div>
-  </div>
-</section>
-
-<!-- ================= TAB 7: SITUAÇÕES ESPECIAIS ================= -->
-<section class="tabpanel" id="tab-especiais">
-  <div class="section">
-    <h2>Pós-operatório em situações especiais</h2>
-
-    <h3>Paciente obeso</h3>
-    <p>Múltiplos riscos perioperatórios exigem medidas extremadas para minimizar complicações:</p>
-    <ul class="plain">
-      <li>Manter o leito em posição de Fowler — melhora a capacidade respiratória, reduzindo atelectasia e pneumonia.</li>
-      <li>Heparina de baixo peso molecular e deambulação precoce para atenuar risco de TVP.</li>
-      <li>Controle glicêmico rigoroso com escala de insulina.</li>
-    </ul>
-
-    <h3>Paciente idoso — avaliação pós-operatória por sistema</h3>
-    <div class="accordion">
-      <div class="accordion-head" onclick="toggleAcc(this)"><span>Cardiovascular</span><span class="chev">▸</span></div>
-      <div class="accordion-body">
-        <p>Massa e cavidade do ventrículo esquerdo podem aumentar (não nas mulheres). Pressão sistólica aumenta mais que a diastólica; capacidade de elevar a fração de ejeção em resposta ao estresse está diminuída. Fibrilação atrial requer anticoagulação (mantida no pós-alta); controle de frequência em taquiarritmias supraventriculares pode usar infusão contínua de bloqueadores de canais de cálcio.</p>
-      </div>
-    </div>
-    <div class="accordion">
-      <div class="accordion-head" onclick="toggleAcc(this)"><span>Pulmonar</span><span class="chev">▸</span></div>
-      <div class="accordion-body">
-        <p>DPOC é a afecção mais frequente, com risco de complicações até 4× maior (edema pulmonar, atelectasia, pneumonia), frequentemente exigindo suporte ventilatório prolongado. DRGE pode predispor a broncoaspiração.</p>
-      </div>
-    </div>
-    <div class="accordion">
-      <div class="accordion-head" onclick="toggleAcc(this)"><span>Renal</span><span class="chev">▸</span></div>
-      <div class="accordion-body">
-        <p>Massa glomerular e fluxo sanguíneo cortical diminuídos, com menor taxa de filtração — afeta regulação de líquidos, eletrólitos e excreção de medicamentos. Creatinina sérica e clearance são referência importante para dosagem de fluidos/fármacos. Obstrução e incontinência urinária são frequentes no pós-operatório desse grupo.</p>
-      </div>
-    </div>
-    <div class="accordion">
-      <div class="accordion-head" onclick="toggleAcc(this)"><span>Cognição</span><span class="chev">▸</span></div>
-      <div class="accordion-body">
-        <p>Déficit cognitivo pré-operatório correlaciona-se diretamente com morbidade pós-operatória, piores expectativas de reabilitação e maior mortalidade. Demência, depressão, surdez e epilepsia interferem na capacidade de decisão autônoma — recorrer aos familiares quando necessário.</p>
-      </div>
-    </div>
-    <div class="accordion">
-      <div class="accordion-head" onclick="toggleAcc(this)"><span>Hematológico e infeccioso</span><span class="chev">▸</span></div>
-      <div class="accordion-body">
-        <p>Anemia não é rara (alimentação deficiente, perdas não detectadas) — o tratamento não se baseia apenas nos níveis de hemoglobina, mas em fatores clínicos como saturação de O₂ e grau de doença cardiovascular/pulmonar. Reserva fisiológica pobre torna o idoso menos tolerante à anemia, podendo requerer transfusão mesmo com hemoglobina relativamente alta. Sistema imunológico comprometido eleva o risco infeccioso — reforça a importância da profilaxia antibiótica adequada. Profilaxia farmacológica de TVP reduz morbimortalidade nesse grupo, particularmente vulnerável pela imobilização e comorbidades.</p>
-      </div>
-    </div>
-
-    <h3>Pós-operatório em cirurgia torácica — protocolo detalhado</h3>
-    <p>Modelo de conduta pós-operatória altamente protocolizada, útil como referência para o manejo de pacientes críticos em UTI cirúrgica:</p>
-    <div class="two-col">
-      <div class="card">
-        <strong>Monitorização inicial</strong>
-        <ul class="plain" style="margin-top:8px;">
-          <li>Avaliação por intensivista antes da transferência à UTI</li>
-          <li>Repouso com cabeceira elevada a 30° (previne broncoaspiração)</li>
-          <li>Sinais vitais horários nas primeiras 24h</li>
-          <li>Diurese horária (aceitável: 0,5 mL/kg/h)</li>
-          <li>Monitorização cardiorrespiratória contínua</li>
-        </ul>
-      </div>
-      <div class="card">
-        <strong>Sondas torácicas</strong>
-        <ul class="plain" style="margin-top:8px;">
-          <li>Aspiração contínua em 15-20 cmH₂O por 72h (exceto pneumectomia total)</li>
-          <li>"Ordenha" da sonda a cada 4h para evitar obstrução</li>
-          <li>Reavaliar se drenagem &gt;100mL/h por 4h, ou &gt;200mL em 1h — repor volume/hemoderivados</li>
-          <li>Pinçar quando drenagem &lt;100mL/24h + reexpansão radiológica após 72h</li>
-          <li>Retirar após 24h pinçada, com controle radiológico e líquido claro &lt;100mL/24h</li>
-        </ul>
-      </div>
-    </div>
-    <p><strong>Antibioticoprofilaxia:</strong> cefalosporina de 1ª geração (cefazolina 1g IV no pré-operatório + 2 doses a cada 8h após). Infecção estabelecida (empiema, pneumonia, abscesso, perfuração esofágica) ou contaminação transoperatória: amplo espectro — cefalosporina de 3ª/4ª geração + aminoglicosídeo + metronidazol (cobertura de anaeróbios), ou carbapenêmico (ex. meropenem 1g a cada 6h) em casos graves.</p>
-    <p><strong>Fluidoterapia:</strong> inicial de 50-70 mL/kg/h, individualizada conforme insuficiência cardíaca, valvulopatia, vômitos e função renal — monitorizar com PVC. Cirurgias de grande porte (esofagectomia, ressecção de grandes tumores mediastinais) requerem maior volume.</p>
-    <p><strong>Suporte ventilatório:</strong> pode ser necessário por 48h ou mais. Volume corrente 6-8 mL/kg, FR 15-20/min; avaliar PEEP conforme oxigenação — evitar no pós-operatório imediato de ressecções pulmonares totais/parciais.</p>
-    <p><strong>Fisioterapia respiratória:</strong> exercícios diafragmáticos e de expansão pulmonar, drenagem postural, vibração, clapping, tosse eficaz, espirometria incentivada, oxigênio umidificado, aerossolterapia com broncodilatadores, aspiração de secreções quando necessário.</p>
-    <div class="box value">
-      <div class="box-label">📏 ANALGESIA PÓS-OPERATÓRIA EM CIRURGIA TORÁCICA — DOSES DE REFERÊNCIA</div>
-      <p><strong>Dipirona:</strong> 2 ampolas (600mg) diluídas em 10mL de dextrose 5%, IV lento, a cada 6h.<br>
-      <strong>Peridural contínua:</strong> bupivacaína 100-150mg (ou 50-150mg + morfina 0,01mg/kg/dia) a cada 6h; ou lidocaína 100-150mg a cada 4h (ou associada a morfina).<br>
-      <strong>Opioides sistêmicos:</strong> petidina 50-100mg a cada 6-8h; morfina 0,1mg/kg a cada 6-8h; fentanila 50-100mg a cada 6-8h (ou infusão contínua 0,7-10 µg/kg/h).<br>
-      <strong>AINE:</strong> diclofenaco — dose de ataque 75mg IV/IM, seguida de 2 ampolas (150mg) diluídas para infusão em 24h.</p>
-    </div>
-
-    <div class="box source">
-      <div class="box-label">📚 FONTE DESTA SEÇÃO</div>
-      <p>Cirugía, Tomo I, Cap. 18 (pós-operatório em obesos, idosos por sistema, e protocolo detalhado de cirurgia torácica).</p>
-    </div>
-  </div>
-</section>
-
-<!-- ================= TAB 8: CASO CLÍNICO ================= -->
-<section class="tabpanel" id="tab-caso">
-  <div class="section">
-    <h2>Caso clínico simulado</h2>
-    <p class="small-note">Clique em cada etapa para expandir. O caso ilustra a aplicação integrada dos conceitos de pré e pós-operatório revisados neste módulo.</p>
-
-    <div class="case-wrap open" id="case-1">
-      <button class="case-toggle" onclick="toggleCase('case-1')"><span><span class="tag">01</span>Motivo da consulta</span><span class="chev">▾</span></button>
-      <div class="case-content"><div class="case-content-inner">
-        <p>Homem, 68 anos, hipertenso e diabético tipo 2, encaminhado para <strong>colecistectomia eletiva</strong> por colelitíase sintomática recorrente.</p>
-      </div></div>
-    </div>
-
-    <div class="case-wrap" id="case-2">
-      <button class="case-toggle" onclick="toggleCase('case-2')"><span><span class="tag">02</span>Antecedentes e medicações em uso</span><span class="chev">▾</span></button>
-      <div class="case-content"><div class="case-content-inner">
-        <p>Hipertensão controlada com losartana. Diabetes tipo 2 em uso de metformina e glibenclamida. Tabagista de 20 cigarros/dia há 30 anos. Nega cirurgias prévias. Refere dispneia leve aos esforços moderados.</p>
-      </div></div>
-    </div>
-
-    <div class="case-wrap" id="case-3">
-      <button class="case-toggle" onclick="toggleCase('case-3')"><span><span class="tag">03</span>Avaliação pré-operatória por sistemas</span><span class="chev">▾</span></button>
-      <div class="case-content"><div class="case-content-inner">
-        <p><strong>ASA:</strong> Classe III (doença sistêmica grave não incapacitante — hipertensão + diabetes).<br>
-        <strong>Cardiovascular:</strong> ECG solicitado por idade &gt;45 anos — ritmo sinusal, sem alterações isquêmicas.<br>
-        <strong>Respiratório:</strong> tabagista com dispneia leve — solicitada radiografia de tórax; orientada cessação do tabagismo (idealmente 6 semanas antes, mínimo 7 dias).<br>
-        <strong>Endócrino:</strong> glicemia de jejum 142 mg/dL, HbA1c 7,8% — controle aceitável, mas será ajustado o esquema de hipoglicemiantes.<br>
-        <strong>Exames gerais:</strong> hemograma, ureia/eletrólitos, coagulograma solicitados por faixa etária e comorbidades.</p>
-      </div></div>
-    </div>
-
-    <div class="case-wrap" id="case-4">
-      <button class="case-toggle" onclick="toggleCase('case-4')"><span><span class="tag">04</span>Preparo pré-operatório</span><span class="chev">▾</span></button>
-      <div class="case-content"><div class="case-content-inner">
-        <ul class="plain">
-          <li><strong>Glibenclamida</strong> (sulfonilureia) suspensa 48h antes, pelo risco de hipoglicemia intraoperatória; <strong>metformina</strong> também suspensa pela mesma janela.</li>
-          <li>Manutenção da losartana até a manhã da cirurgia.</li>
-          <li>Cirurgia agendada para o <strong>início da manhã</strong>, conforme recomendado para diabéticos.</li>
-          <li>Profilaxia de TVP: heparina de baixo peso molecular 2h antes da cirurgia + meias elásticas.</li>
-          <li>Antibioticoprofilaxia com cefazolina, 30-60 min antes da incisão.</li>
-          <li>Jejum de 8h para sólidos, confirmado antes da indução.</li>
-          <li>Tricotomia elétrica (se necessária) realizada no mesmo dia, nunca com lâmina na véspera.</li>
-          <li>Consentimento informado obtido, com explicação clara sobre riscos, benefícios e alternativas.</li>
-        </ul>
-      </div></div>
-    </div>
-
-    <div class="case-wrap" id="case-5">
-      <button class="case-toggle" onclick="toggleCase('case-5')"><span><span class="tag">05</span>Transoperatório (resumo)</span><span class="chev">▾</span></button>
-      <div class="case-content"><div class="case-content-inner">
-        <p>Colecistectomia laparoscópica sem intercorrências, duração de 70 minutos. Perda sanguínea mínima. Sonda vesical não necessária pelo curto tempo cirúrgico previsto.</p>
-      </div></div>
-    </div>
-
-    <div class="case-wrap" id="case-6">
-      <button class="case-toggle" onclick="toggleCase('case-6')"><span><span class="tag">06</span>Pós-operatório imediato</span><span class="chev">▾</span></button>
-      <div class="case-content"><div class="case-content-inner">
-        <ul class="plain">
-          <li>Sinais vitais monitorizados a cada hora nas primeiras horas em sala de recuperação.</li>
-          <li>Posição inicial: decúbito supino sem travesseiro até recuperação completa da anestesia, evoluindo para Fowler.</li>
-          <li>Hidratação IV com solução isotônica, sem potássio até confirmação de diurese adequada.</li>
-          <li>Glicemia capilar monitorizada a cada 6h com escala de insulina de resgate.</li>
-          <li>Analgesia com dipirona IV e AINE, evitando opioides em excesso pelo risco de depressão respiratória em tabagista.</li>
-          <li>Estímulo à respiração profunda e mobilização precoce, dada a história de tabagismo (profilaxia de atelectasia).</li>
-        </ul>
-      </div></div>
-    </div>
-
-    <div class="case-wrap" id="case-7">
-      <button class="case-toggle" onclick="toggleCase('case-7')"><span><span class="tag">07</span>Evolução — pós-operatório mediato</span><span class="chev">▾</span></button>
-      <div class="case-content"><div class="case-content-inner">
-        <p>Dieta líquida iniciada em 6h, evoluindo para branda em 24h. Deambulação iniciada ainda no primeiro dia pós-operatório. Glicemias controladas com pequenos ajustes de insulina de resgate. Ferida operatória sem sinais inflamatórios.</p>
-        <div class="box alert" style="margin-top:12px;">
-          <div class="box-label">⚠️ ATENÇÃO NO 2º DIA</div>
-          <p>No 2º dia pós-operatório, paciente apresenta <strong>taquicardia leve sem hipotensão</strong> e discreta <strong>confusão mental transitória</strong>. Diante desses sinais de alarme, investiga-se ativamente: descartada embolia pulmonar (sem dispneia/dor torácica), descartada hipoglicemia (glicemia capilar normal), hemograma sem leucocitose significativa — quadro atribuído a efeito residual de sedação associado à idade, com resolução espontânea em poucas horas sob observação.</p>
+      <section class="section-block">
+        <div class="section-heading">
+          <div><p class="eyebrow">ACOMPANHA AGORA</p><h2>Jogos em destaque</h2></div>
+          <span class="update-label" id="lastUpdated">A aguardar dados</span>
         </div>
-      </div></div>
-    </div>
-
-    <div class="case-wrap" id="case-8">
-      <button class="case-toggle" onclick="toggleCase('case-8')"><span><span class="tag">08</span>Alta</span><span class="chev">▾</span></button>
-      <div class="case-content"><div class="case-content-inner">
-        <p>Alta hospitalar no 2º dia pós-operatório, com dieta livre bem tolerada, ferida operatória em bom aspecto e controle glicêmico estável. Orientações: retorno gradual da metformina/glibenclamida conforme aceitação da dieta, reforço sobre cessação definitiva do tabagismo, retirada de pontos ambulatorial em 7 dias, e retorno em caso de febre, dor abdominal intensa ou sinais inflamatórios na ferida.</p>
-      </div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= TAB 9: MAPA MENTAL ================= -->
-<section class="tabpanel" id="tab-mapa">
-  <div class="section">
-    <h2 data-i18n="mapT">Mapa mental</h2>
-    <p class="mm-hint" data-i18n="mapH">Toque num ramo para ver os detalhes.</p>
-    <div class="mm-wrap" id="mm"></div>
-    <div class="mm-detail" id="mm-detail"></div>
-  </div>
-</section>
-
-<!-- ================= GLOSSÁRIO ================= -->
-<section class="tabpanel" id="tab-glossario">
-  <div class="section">
-    <h2 data-i18n="glT">Glossário</h2>
-    <input class="gl-search" id="gl-q" type="search" autocomplete="off">
-    <div class="gl-count" id="gl-count"></div>
-    <div id="gl-list"></div>
-  </div>
-</section>
-
-<!-- ================= TAB 10: FLASHCARDS ================= -->
-<section class="tabpanel" id="tab-flash">
-  <div class="section">
-    <h2>Flashcards</h2>
-    <div class="flash-controls">
-      <span class="flash-progress" id="flash-progress">Carta 1 de 24</span>
-      <button class="btn" onclick="shuffleFlash()">🔀 Embaralhar</button>
-    </div>
-    <div class="flashcard-scene">
-      <div class="flashcard" id="flashcard" onclick="flipCard()">
-        <div class="flash-face flash-front">
-          <span class="flash-kicker" id="flash-kicker-f">PERGUNTA</span>
-          <div class="flash-text" id="flash-q"></div>
-          <span class="flash-hint">toque para virar</span>
+        <div id="matchList" class="match-list">
+          <div class="loading-card"><span class="spinner"></span><p>A carregar jogos…</p></div>
         </div>
-        <div class="flash-face flash-back">
-          <span class="flash-kicker">RESPOSTA</span>
-          <div class="flash-text" id="flash-a"></div>
-          <span class="flash-hint">toque para voltar</span>
+        <p class="data-note" id="dataNote">Os resultados reais aparecerão quando a ligação à API estiver configurada.</p>
+      </section>
+
+      <section class="section-block">
+        <div class="section-heading">
+          <div><p class="eyebrow">ACESSO RÁPIDO</p><h2>Competições populares</h2></div>
+          <button class="text-button" data-go="leagues">Ver todas</button>
         </div>
+        <div class="competition-strip" id="popularCompetitions">
+          <button class="competition-chip" data-league="39"><span class="competition-ball">⚽</span><span>Premier League</span></button>
+          <button class="competition-chip" data-league="2"><span class="competition-ball">🏆</span><span>Champions League</span></button>
+          <button class="competition-chip" data-league="140"><span class="competition-ball">⚽</span><span>La Liga</span></button>
+          <button class="competition-chip" data-league="13"><span class="competition-ball">🌍</span><span>CAF / África</span></button>
+        </div>
+      </section>
+    </main>
+
+    <section id="page-live" class="page-view hidden">
+      <div class="page-heading"><p class="eyebrow">ACOMPANHAMENTO EM TEMPO REAL</p><h1>Ao vivo</h1><p class="muted">Jogos que estão a decorrer neste momento.</p></div>
+      <div id="liveList" class="match-list empty-state">A carregar jogos ao vivo…</div>
+    </section>
+
+    <section id="page-matches" class="page-view hidden">
+      <div class="page-heading"><p class="eyebrow">CALENDÁRIO</p><h1>Jogos</h1><p class="muted">Consulta os jogos por data.</p></div>
+      <div class="date-control">
+        <button class="icon-button" id="previousDay" aria-label="Dia anterior">‹</button>
+        <input type="date" id="matchDate">
+        <button class="icon-button" id="nextDay" aria-label="Dia seguinte">›</button>
       </div>
-    </div>
-    <div class="flash-nav">
-      <button class="btn" id="flash-prev" onclick="prevFlash()">← Anterior</button>
-      <button class="btn primary" onclick="flipCard()">Virar carta</button>
-      <button class="btn" id="flash-next" onclick="nextFlash()">Próxima →</button>
-    </div>
+      <div id="dateMatchList" class="match-list"></div>
+    </section>
+
+    <section id="page-leagues" class="page-view hidden">
+      <div class="page-heading"><p class="eyebrow">FUTEBOL INTERNACIONAL</p><h1>Competições</h1><p class="muted">Ligas, taças e torneios de todo o mundo.</p></div>
+      <div class="league-grid" id="leagueGrid">
+        <button class="league-card" data-league="2"><b>🏆</b><strong>UEFA Champions League</strong><small>Europa</small></button>
+        <button class="league-card" data-league="39"><b>🏴</b><strong>Premier League</strong><small>Inglaterra</small></button>
+        <button class="league-card" data-league="140"><b>🇪🇸</b><strong>La Liga</strong><small>Espanha</small></button>
+        <button class="league-card" data-league="135"><b>🇮🇹</b><strong>Serie A</strong><small>Itália</small></button>
+        <button class="league-card" data-league="78"><b>🇩🇪</b><strong>Bundesliga</strong><small>Alemanha</small></button>
+        <button class="league-card" data-league="61"><b>🇫🇷</b><strong>Ligue 1</strong><small>França</small></button>
+        <button class="league-card" data-league="94"><b>🇵🇹</b><strong>Primeira Liga</strong><small>Portugal</small></button>
+        <button class="league-card" data-league="Africa"><b>🌍</b><strong>Futebol africano</strong><small>África</small></button>
+        <button class="league-card" data-league="Guinea-Bissau"><b>🇬🇼</b><strong>Guiné-Bissau</strong><small>Seleção e competições</small></button>
+      </div>
+    </section>
+
+    <section id="page-favorites" class="page-view hidden">
+      <div class="page-heading"><p class="eyebrow">A TUA SELEÇÃO</p><h1>Favoritos</h1><p class="muted">Guarda equipas e competições para acompanhar.</p></div>
+      <div class="favorite-box"><span>☆</span><h3>Os teus favoritos</h3><p>Em breve poderás guardar equipas e competições e encontrá-las aqui.</p></div>
+    </section>
+
+    <section id="page-profile" class="page-view hidden">
+      <div class="page-heading"><p class="eyebrow">MEDBI</p><h1>Definições</h1><p class="muted">Preferências da aplicação.</p></div>
+      <div class="settings-card">
+        <div class="setting-row"><span>Atualização automática</span><strong>30 segundos</strong></div>
+        <div class="setting-row"><span>Ligação à Internet</span><strong>Necessária</strong></div>
+        <div class="setting-row"><span>Versão</span><strong>1.0.0</strong></div>
+        <div class="setting-row"><span>Desenvolvido por</span><strong>MEDBI</strong></div>
+      </div>
+    </section>
+
+    <nav class="bottom-nav" aria-label="Navegação principal">
+      <button class="nav-item active" data-page="home"><span>⌂</span><small>Início</small></button>
+      <button class="nav-item" data-page="live"><span class="nav-live-icon">●</span><small>Ao vivo</small></button>
+      <button class="nav-item" data-page="matches"><span>▦</span><small>Jogos</small></button>
+      <button class="nav-item" data-page="leagues"><span>♜</span><small>Ligas</small></button>
+      <button class="nav-item" data-page="profile"><span>◉</span><small>Perfil</small></button>
+    </nav>
+    <div class="toast" id="toast" role="status"></div>
   </div>
-</section>
-
-<!-- ================= TAB 11: QUIZ ================= -->
-<section class="tabpanel" id="tab-quiz">
-  <div class="section">
-    <h2>Quiz final</h2>
-    <p class="small-note">Responda todas as questões e veja seu resultado ao final.</p>
-    <div id="quiz-container"></div>
-    <div style="text-align:center;margin:24px 0;">
-      <button class="btn primary" id="quiz-submit" onclick="submitQuiz()">Corrigir quiz</button>
-      <button class="btn" id="quiz-reset" onclick="resetQuiz()" style="display:none;">Refazer quiz</button>
-    </div>
-    <div id="quiz-result">
-      <div class="score" id="quiz-score"></div>
-      <p id="quiz-feedback"></p>
-    </div>
-  </div>
-</section>
-
-</main>
-
-<div class="footer-note">Módulo de estudo — Pré e Pós-Operatório · Conteúdo compilado e cruzado a partir da bibliografia oficial de Cirurgia.</div>
-
-<script>
-
-
-/* ============ ACCORDIONS ============ */
-function toggleAcc(head){
-  const acc = head.parentElement;
-  const body = acc.querySelector('.accordion-body');
-  const isOpen = acc.classList.contains('open');
-  document.querySelectorAll('.accordion').forEach(a=>{
-    a.classList.remove('open');
-    a.querySelector('.accordion-body').style.maxHeight = null;
-  });
-  if(!isOpen){
-    acc.classList.add('open');
-    body.style.maxHeight = body.scrollHeight + 'px';
-  }
-}
-
-/* ============ CASE STUDY ============ */
-function toggleCase(id){
-  const wrap = document.getElementById(id);
-  wrap.classList.toggle('open');
-}
-document.querySelectorAll('.case-wrap.open .case-content').forEach(c=>{
-  c.style.maxHeight = c.scrollHeight + 'px';
-});
-document.querySelectorAll('.case-toggle').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    setTimeout(()=>{
-      document.querySelectorAll('.case-wrap').forEach(w=>{
-        const c = w.querySelector('.case-content');
-        if(w.classList.contains('open')){ c.style.maxHeight = c.scrollHeight+'px'; }
-        else { c.style.maxHeight = null; }
-      });
-    },10);
-  });
-});
-
-/* ============ FLASHCARDS ============ */
-let flashcards = [
-  {q:"O que é o 'síndrome geral de adaptação' descrito por Hans Selye, e por que se aplica à cirurgia?", a:"É a resposta do organismo à agressão. A cirurgia, como agressão controlada e planejada, desencadeia exatamente esse mecanismo — o estresse cirúrgico começa desde a comunicação da possibilidade de operação, não apenas no ato cirúrgico."},
-  {q:"Quais os três mediadores centrais da resposta neuroendócrina ao trauma cirúrgico?", a:"Glicocorticoides, catecolaminas e citocinas — atuando de forma integrada para modular a expressão gênica e sustentar o hipermetabolismo característico da resposta ao estresse."},
-  {q:"Em quais três origens pode ser agrupado o risco cirúrgico?", a:"Dependente do meio assistencial, dependente da equipe médica, e dependente do paciente (condições psicofísicas e patológicas)."},
-  {q:"O que caracteriza a classificação ASA V?", a:"Paciente moribundo, do qual não se espera sobrevida de 24 horas com ou sem a cirurgia."},
-  {q:"Por que a classificação ASA é considerada melhor preditor de morbimortalidade que a idade isolada?", a:"Porque reflete o estado funcional real e a comorbidade do paciente, e não apenas o número de anos vividos — a idade isoladamente não deve contraindicar cirurgia na ausência de outros fatores de risco."},
-  {q:"Por quanto tempo deve-se idealmente adiar uma cirurgia eletiva após um infarto agudo do miocárdio?", a:"O mínimo recomendado é de 4-6 semanas; o tempo ideal considerado é de 6 meses."},
-  {q:"Por que o tabagismo é fator de risco perioperatório importante, e qual o tempo mínimo de cessação recomendado?", a:"Aumenta em até 6 vezes o risco de complicações pós-operatórias com consumo >10 cigarros/dia. Cessação ideal ≥6 semanas antes; mínimo de 7 dias para eliminar o efeito rebote sobre a via aérea superior."},
-  {q:"Qual classificação é usada para estratificar o risco cirúrgico em pacientes cirróticos?", a:"A classificação de Child-Pugh."},
-  {q:"Por quanto tempo antes da cirurgia devem ser suspensos AAS/clopidogrel, AINEs e varfarina, respectivamente?", a:"AAS/clopidogrel: 7-10 dias. AINEs: pelo menos 3 dias. Varfarina: 3-4 dias, geralmente com ponte de heparina."},
-  {q:"Qual o jejum mínimo recomendado antes de uma cirurgia eletiva?", a:"4 horas."},
-  {q:"Por que é proibido usar lâmina de barbear na véspera da cirurgia para remoção de pelos?", a:"Porque produz microabrasões que favorecem a colonização bacteriana e aumentam o risco de infecção da ferida operatória — deve-se usar tricotomia elétrica no mesmo dia da cirurgia."},
-  {q:"Qual a janela recomendada para administração da profilaxia antibiótica antes da incisão cirúrgica?", a:"30 a 60 minutos antes da incisão; repetir se a cirurgia exceder 3h ou o dobro da meia-vida do fármaco. Não deve ultrapassar 24h de duração total."},
-  {q:"Qual a diferença entre consentimento informado implícito e escrito?", a:"O implícito é presumido para estudos preliminares (laboratório, imagem); o escrito é obrigatório para intervenções com riscos significativos, como cirurgias e anestesia."},
-  {q:"Quais os três mitos mais comuns que atrapalham o tratamento adequado da dor pós-operatória?", a:"Que a dor é consequência inevitável da cirurgia; que é desagradável mas inofensiva; e que aliviá-la mascara sinais de complicação."},
-  {q:"O que é 'analgesia preventiva'?", a:"Estratégia que visa bloquear os mecanismos de geração/transmissão da dor antes que se instalem, prevenindo inclusive a hiperalgesia secundária em áreas não operadas."},
-  {q:"Qual a diurese horária mínima considerada adequada no adulto pós-operatório?", a:"0,5 mL/kg/hora."},
-  {q:"Em quanto tempo, geralmente, os drenos abdominais devem ser retirados como regra geral?", a:"Não devem ser mantidos por mais de 72 horas como regra geral."},
-  {q:"Quais os quatro sinais de alarme clássicos de complicação pós-operatória, segundo a semiologia clássica?", a:"Taquicardia (sem outra causa aparente), febre, íleo paralítico persistente (>72h) e alterações neurológicas (confusão, inquietude) — a confusão costuma ser o primeiro sinal de sepse."},
-  {q:"Por que a ausência de reação peritoneal ao exame não descarta uma complicação intra-abdominal?", a:"Porque a dor abdominal no paciente já operado pode ser sutil e mascarada — a reação peritoneal tem grande valor quando presente, mas pode dar falso-negativo."},
-  {q:"Quais os cinco fatores críticos para o sucesso de cirurgia maior eletiva no idoso?", a:"Preparo pré-operatório cuidadoso; minimizar jejum/inatividade/hipotermia/dor; evitar desequilíbrio hidroeletrolítico e farmacoterapia inadequada; julgamento e técnica cirúrgica cautelosos; e otimização da função física e cognitiva."},
-  {q:"Por que a mobilização precoce é tão importante no pós-operatório?", a:"Previne tromboflebite de membros inferiores (e tromboembolismo pulmonar), reduz complicações respiratórias (atelectasia, broncopneumonia) e favorece o retorno do peristaltismo intestinal."},
-  {q:"Qual posição de leito é recomendada para o paciente obeso no pós-operatório, e por quê?", a:"Posição de Fowler — melhora a capacidade respiratória, reduzindo o risco de atelectasia e pneumonia."},
-  {q:"Em cirurgia torácica, quando se deve reavaliar (e possivelmente reoperar) por sangramento excessivo pela sonda pleural?", a:"Quando a drenagem ultrapassa 100 mL/h por 4 horas seguidas, ou mais de 200 mL em uma única hora."},
-  {q:"Qual medicamento suplementar deve ser administrado a pacientes em uso crônico de corticoide que serão submetidos a cirurgia maior, e por quê?", a:"Hidrocortisona suplementar (100-150mg por 2-3 dias em cirurgia maior), para prevenir insuficiência adrenal aguda por supressão do eixo hipotálamo-hipófise-suprarrenal."},
-];
-let flashIdx = 0;
-let flashFlipped = false;
-function renderFlash(){
-  document.getElementById('flash-q').textContent = flashcards[flashIdx].q;
-  document.getElementById('flash-a').textContent = flashcards[flashIdx].a;
-  document.getElementById('flash-progress').textContent = `Carta ${flashIdx+1} de ${flashcards.length}`;
-  document.getElementById('flash-prev').disabled = flashIdx===0;
-  document.getElementById('flash-next').disabled = flashIdx===flashcards.length-1;
-  const card = document.getElementById('flashcard');
-  card.classList.remove('flipped');
-  flashFlipped = false;
-}
-function flipCard(){
-  const card = document.getElementById('flashcard');
-  flashFlipped = !flashFlipped;
-  card.classList.toggle('flipped', flashFlipped);
-}
-function nextFlash(){ if(flashIdx<flashcards.length-1){ flashIdx++; renderFlash(); } }
-function prevFlash(){ if(flashIdx>0){ flashIdx--; renderFlash(); } }
-function shuffleFlash(){
-  for(let i=flashcards.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [flashcards[i],flashcards[j]]=[flashcards[j],flashcards[i]];
-  }
-  flashIdx=0; renderFlash();
-}
-renderFlash();
-
-/* ============ QUIZ ============ */
-const quizData = [
-  {q:"Qual conceito de Hans Selye fundamenta a compreensão do estresse cirúrgico?", opts:["Homeostasia de Cannon","Síndrome geral de adaptação","Milieu intérieur de Claude Bernard","Reflexo condicionado"], correct:1, explain:"O síndrome geral de adaptação de Selye descreve a resposta orgânica à agressão, aplicando-se diretamente à agressão controlada que é a cirurgia."},
-  {q:"Quais os três mediadores centrais da resposta neuroendócrina ao trauma cirúrgico?", opts:["Insulina, glucagon e somatostatina","Glicocorticoides, catecolaminas e citocinas","Aldosterona, ADH e renina apenas","Serotonina, dopamina e GABA"], correct:1, explain:"Glicocorticoides, catecolaminas e citocinas atuam de forma integrada, alterando a expressão gênica que sustenta a resposta metabólica ao trauma."},
-  {q:"Qual classe da ASA corresponde a 'doença sistêmica grave, não incapacitante'?", opts:["Classe I","Classe II","Classe III","Classe V"], correct:2, explain:"A Classe III da ASA descreve doença sistêmica grave que, no entanto, não é incapacitante para o paciente."},
-  {q:"Por quanto tempo é recomendado, no mínimo, adiar uma cirurgia eletiva após infarto agudo do miocárdio?", opts:["24 horas","1 semana","4-6 semanas","O IAM prévio nunca contraindica cirurgia eletiva"], correct:2, explain:"Recomenda-se adiar por 4-6 semanas no mínimo, sendo 6 meses considerado o tempo ideal para reduzir o risco cardiovascular perioperatório."},
-  {q:"Por que a metformina deve ser suspensa antes de cirurgia em paciente diabético?", opts:["Por causar hipoglicemia grave isolada", "Pelo risco de acidose lática, especialmente se houver comprometimento da função renal", "Por interferir na cicatrização da ferida", "Não há necessidade de suspendê-la"], correct:1, explain:"A metformina é suspensa pelo risco de acidose lática, principalmente em contextos de hipoperfusão renal transitória durante a cirurgia."},
-  {q:"Qual a conduta correta para remoção de pelos antes da cirurgia?", opts:["Lâmina de barbear na véspera à noite", "Tricotomia elétrica no mesmo dia da cirurgia", "Depilação com cera uma semana antes", "Não é necessário remover pelos em nenhuma situação"], correct:1, explain:"A tricotomia elétrica no mesmo dia é a técnica recomendada; lâminas na véspera aumentam o risco de infecção por microabrasões."},
-  {q:"Qual a janela ideal para administração de antibioticoprofilaxia antes da incisão cirúrgica?", opts:["Na noite anterior à cirurgia", "30 a 60 minutos antes da incisão", "Apenas após o fechamento da ferida", "6 horas antes da cirurgia"], correct:1, explain:"A administração 30-60 minutos antes da incisão garante concentração tecidual adequada do antibiótico no momento crítico."},
-  {q:"Segundo o texto, qual das afirmações sobre dor pós-operatória é um MITO a ser combatido?", opts:["A dor pode e deve ser tratada ativamente", "Aliviar a dor pode mascarar sinais de complicação e por isso é perigoso", "A analgesia preventiva reduz a hiperalgesia secundária", "A dor pós-operatória diminui progressivamente ao longo da primeira semana"], correct:1, explain:"A ideia de que aliviar a dor 'mascara' complicações é um mito — a analgesia adequada não impede o reconhecimento de complicações verdadeiras."},
-  {q:"Qual a diurese horária mínima considerada adequada no adulto no pós-operatório?", opts:["0,1 mL/kg/h", "0,5 mL/kg/h", "2,0 mL/kg/h", "5,0 mL/kg/h"], correct:1, explain:"0,5 mL/kg/h é o valor de referência mínimo aceito como diurese adequada no adulto."},
-  {q:"Quais são os quatro sinais de alarme clássicos de complicação pós-operatória?", opts:["Prurido, tosse, soluço e sede", "Taquicardia, febre, íleo paralítico persistente e alterações neurológicas", "Constipação, insônia, cefaleia e tontura leve", "Apenas a dor abdominal isolada"], correct:1, explain:"Esses quatro sinais — taquicardia, febre, íleo prolongado e alterações neurológicas (como confusão) — são os marcadores clássicos de alerta para complicação."},
-  {q:"Por que a confusão mental é um sinal particularmente importante no pós-operatório?", opts:["Não tem relevância clínica", "Costuma ser o primeiro sinal de sepse", "Indica sempre demência prévia não diagnosticada", "É sempre efeito esperado da anestesia, sem necessidade de investigação"], correct:1, explain:"A confusão mental é frequentemente o primeiro sinal clínico de sepse, exigindo investigação imediata da causa."},
-  {q:"Quais os cinco fatores críticos para o sucesso de cirurgia maior eletiva em paciente idoso?", opts:["Apenas controlar a pressão arterial", "Preparo cuidadoso, minimizar jejum/estresse, evitar desequilíbrio hidroeletrolítico, técnica cautelosa e otimização funcional/cognitiva", "Restringir totalmente a mobilização no pós-operatório", "Evitar qualquer avaliação multidisciplinar"], correct:1, explain:"Esses cinco fatores resumem a abordagem recomendada para reduzir a alta mortalidade perioperatória associada à idade avançada."},
-  {q:"Em cirurgia torácica, a partir de qual volume de drenagem pela sonda pleural se deve reavaliar risco de sangramento ativo?", opts:["10 mL/h por 1 hora", "100 mL/h por 4 horas, ou 200 mL em 1 hora", "5 mL/h por 24 horas", "Nunca é necessário reavaliar o volume drenado"], correct:1, explain:"Esses limiares (100mL/h por 4h ou 200mL em 1h) sinalizam sangramento ativo que exige reavaliação e possível reposição/reintervenção."},
-  {q:"Por que pacientes em uso crônico de corticoide precisam de suplementação de hidrocortisona no perioperatório de cirurgia maior?", opts:["Para acelerar a cicatrização da pele", "Para prevenir insuficiência adrenal aguda por supressão do eixo hipotálamo-hipófise-suprarrenal", "Para reduzir o risco de infecção urinária", "Não há necessidade real de suplementação"], correct:1, explain:"O uso crônico de corticoide suprime o eixo adrenal; sem suplementação, o paciente corre risco de insuficiência adrenal aguda diante do estresse cirúrgico."},
-];
-let quizAnswers = new Array(quizData.length).fill(null);
-function renderQuiz(){
-  const container = document.getElementById('quiz-container');
-  container.innerHTML = '';
-  quizData.forEach((q,qi)=>{
-    const div = document.createElement('div');
-    div.className='quiz-q';
-    div.innerHTML = `<div class="qn">QUESTÃO ${qi+1} DE ${quizData.length}</div><div class="qtext">${q.q}</div>`;
-    q.opts.forEach((opt,oi)=>{
-      const b = document.createElement('button');
-      b.className='quiz-opt';
-      b.textContent = opt;
-      b.onclick = ()=>selectAnswer(qi,oi);
-      b.id = `q${qi}-o${oi}`;
-      div.appendChild(b);
-    });
-    const ex = document.createElement('div');
-    ex.className='quiz-explain';
-    ex.id = `explain-${qi}`;
-    ex.textContent = q.explain;
-    div.appendChild(ex);
-    container.appendChild(div);
-  });
-}
-function selectAnswer(qi,oi){
-  if(document.getElementById('quiz-result').classList.contains('show')) return;
-  quizAnswers[qi]=oi;
-  quizData[qi].opts.forEach((o,i)=>{
-    document.getElementById(`q${qi}-o${i}`).classList.toggle('selected', i===oi);
-  });
-}
-function submitQuiz(){
-  let score = 0;
-  quizData.forEach((q,qi)=>{
-    const answered = quizAnswers[qi];
-    q.opts.forEach((o,oi)=>{
-      const btn = document.getElementById(`q${qi}-o${oi}`);
-      btn.disabled = true;
-      if(oi===q.correct) btn.classList.add('correct');
-      else if(oi===answered && answered!==q.correct) btn.classList.add('incorrect');
-    });
-    document.getElementById(`explain-${qi}`).classList.add('show');
-    if(answered===q.correct) score++;
-  });
-  const pct = Math.round((score/quizData.length)*100);
-  document.getElementById('quiz-score').textContent = `${score} / ${quizData.length} (${pct}%)`;
-  let feedback = '';
-  if(pct>=85) feedback = 'Excelente domínio do tema — revisão sólida de pré e pós-operatório.';
-  else if(pct>=60) feedback = 'Bom resultado — revise as questões erradas nas abas correspondentes.';
-  else feedback = 'Vale revisar com calma as abas de Avaliação por Sistemas e Preparo antes de repetir o quiz.';
-  document.getElementById('quiz-feedback').textContent = feedback;
-  document.getElementById('quiz-result').classList.add('show');
-  document.getElementById('quiz-submit').style.display='none';
-  document.getElementById('quiz-reset').style.display='inline-block';
-  document.getElementById('quiz-result').scrollIntoView({behavior:'smooth',block:'center'});
-}
-function resetQuiz(){
-  quizAnswers = new Array(quizData.length).fill(null);
-  document.getElementById('quiz-result').classList.remove('show');
-  document.getElementById('quiz-submit').style.display='inline-block';
-  document.getElementById('quiz-reset').style.display='none';
-  renderQuiz();
-  document.getElementById('tab-quiz').scrollIntoView({behavior:'smooth',block:'start'});
-}
-renderQuiz();
-
-/* ============ i18n / TABS / UI (v3) ============ */
-const TABS=[['tab-intro','Introdução','Introducción'],['tab-avaliacao','Avaliação por Sistemas','Evaluación por Sistemas'],['tab-exames','Exames e Nutrição','Exámenes y Nutrición'],['tab-preparo','Preparo e Medicações','Preparación y Medicaciones'],['tab-posimediato','Pós-op. Imediato','Posop. Inmediato'],['tab-posmediato','Pós-op. Mediato','Posop. Mediato'],['tab-especiais','Situações Especiais','Situaciones Especiales'],['tab-caso','Caso Clínico','Caso Clínico'],['tab-mapa','Mapa Mental','Mapa Mental'],['tab-glossario','Glossário','Glosario'],['tab-flash','Flashcards','Flashcards'],['tab-quiz','Quiz','Quiz']];
-const T={pt:{eyebrow:'MÓDULO DE ESTUDO · ATENÇÃO AO PACIENTE CIRÚRGICO',title:'Pré e Pós-Operatório',lede:'Fisiologia do estresse cirúrgico, avaliação e preparo pré-operatório por sistemas, e vigilância pós-operatória completa — reunidos e cruzados a partir da bibliografia oficial de cirurgia, sem repetições.',bg:'Fundo',mapT:'Mapa mental',mapH:'Toque num ramo para ver os detalhes.',glT:'Glossário',glS:'Buscar termo…',glN:'termos',prev:'← Anterior',next:'Próximo →'},
-es:{eyebrow:'MÓDULO DE ESTUDIO · ATENCIÓN AL PACIENTE QUIRÚRGICO',title:'Pre y Posoperatorio',lede:'Fisiología del estrés quirúrgico, evaluación y preparación preoperatoria por sistemas, y vigilancia posoperatoria completa — reunidos y cruzados a partir de la bibliografía oficial de cirugía, sin repeticiones.',bg:'Fondo',mapT:'Mapa mental',mapH:'Toque una rama para ver los detalles.',glT:'Glosario',glS:'Buscar término…',glN:'términos',prev:'← Anterior',next:'Siguiente →'}};
-const BR=[['blue','Fisiologia do estresse','Fisiología del estrés',['Selye: síndrome geral de adaptação','Eixo hipotálamo-hipófise-suprarrenal','Glicocorticoides, catecolaminas, citocinas'],['Selye: síndrome general de adaptación','Eje hipotálamo-hipófisis-suprarrenal','Glucocorticoides, catecolaminas, citocinas']],
-['amber','Pré-op. mediato','Preop. mediato',['ASA I-V: preditor de morbimortalidade','Avaliação por sistema (cárdio, respiratório, renal, endócrino…)','Exames só se justificados clinicamente'],['ASA I-V: predictor de morbimortalidad','Evaluación por sistema (cardio, respiratorio, renal, endocrino…)','Exámenes solo si están justificados clínicamente']],
-['purple','Preparo imediato','Preparación inmediata',['Medicações: suspender AAS/AINE/varfarina em janelas específicas','Jejum · profilaxia de TVP e antibiótica','Checklist final + consentimento informado'],['Medicaciones: suspender AAS/AINE/warfarina en ventanas específicas','Ayuno · profilaxis de TVP y antibiótica','Checklist final + consentimiento informado']],
-['red','Pós-op. imediato','Posop. inmediato',['Vigilância hemodinâmica, respiratória e renal','Sondas e drenos: prazos específicos','Analgesia preventiva — sem mitos'],['Vigilancia hemodinámica, respiratoria y renal','Sondas y drenajes: plazos específicos','Analgesia preventiva — sin mitos']],
-['teal','Pós-op. mediato','Posop. mediato',['Retirada programada de dispositivos','Mobilização precoce, nutrição oral gradual','Sinais de alarme: taquicardia, febre, íleo, confusão'],['Retiro programado de dispositivos','Movilización precoz, nutrición oral gradual','Signos de alarma: taquicardia, fiebre, íleo, confusión']],
-['green','Populações especiais','Poblaciones especiales',['Idoso: 5 fatores críticos, avaliação por sistema','Obeso: Fowler, HBPM, controle glicêmico','Cirurgia torácica: protocolo próprio detalhado'],['Anciano: 5 factores críticos, evaluación por sistema','Obeso: Fowler, HBPM, control glucémico','Cirugía torácica: protocolo propio detallado']]];
-const GL=[['ASA (classificação)','Clasificación ASA','Escala da Sociedade Americana de Anestesiologistas (I a V; VI = morte encefálica) que estratifica o estado físico e prediz morbimortalidade.','Escala de la Sociedad Americana de Anestesiólogos (I a V; VI = muerte encefálica) que estratifica el estado físico y predice morbimortalidad.'],
-['Síndrome geral de adaptação','Síndrome general de adaptación','Resposta de Selye ao estresse em três fases: alarme, resistência e exaustão.','Respuesta de Selye al estrés en tres fases: alarma, resistencia y agotamiento.'],
-['Eixo hipotálamo-hipófise-suprarrenal','Eje hipotálamo-hipófisis-suprarrenal','Cascata CRH → ACTH → cortisol, ativada pelo trauma cirúrgico.','Cascada CRH → ACTH → cortisol, activada por el trauma quirúrgico.'],
-['Catecolaminas','Catecolaminas','Adrenalina e noradrenalina; liberadas no estresse, causam taquicardia, hipertensão e hiperglicemia.','Adrenalina y noradrenalina; liberadas en el estrés, causan taquicardia, hipertensión e hiperglucemia.'],
-['Consentimento informado','Consentimiento informado','Autorização do paciente após explicação de procedimento, riscos, benefícios e alternativas.','Autorización del paciente tras explicar procedimiento, riesgos, beneficios y alternativas.'],
-['Jejum pré-operatório','Ayuno preoperatorio','Período sem ingesta antes da anestesia para reduzir o risco de aspiração; duração conforme protocolo (sólidos × líquidos claros).','Período sin ingesta antes de la anestesia para reducir el riesgo de aspiración; duración según protocolo (sólidos × líquidos claros).'],
-['Profilaxia antibiótica','Profilaxis antibiótica','Antibiótico dado pouco antes da incisão para reduzir infecção de sítio cirúrgico.','Antibiótico administrado poco antes de la incisión para reducir la infección del sitio quirúrgico.'],
-['TVP','TVP (trombosis venosa profunda)','Trombose venosa profunda; prevenida com mobilização, meios mecânicos e HBPM.','Trombosis venosa profunda; se previene con movilización, medios mecánicos y HBPM.'],
-['HBPM','HBPM','Heparina de baixo peso molecular, usada na profilaxia de tromboembolismo.','Heparina de bajo peso molecular, usada en la profilaxis de tromboembolismo.'],
-['Atelectasia','Atelectasia','Colapso alveolar; causa frequente de febre e hipoxemia nas primeiras 48 h; prevenida com espirometria e mobilização.','Colapso alveolar; causa frecuente de fiebre e hipoxemia en las primeras 48 h; se previene con espirometría y movilización.'],
-['Íleo paralítico','Íleo paralítico','Parada transitória do peristaltismo no pós-operatório; distensão, ausência de flatos e vômitos.','Detención transitoria del peristaltismo en el posoperatorio; distensión, ausencia de gases y vómitos.'],
-['Sonda nasogástrica','Sonda nasogástrica','Descomprime o estômago e protege contra distensão e aspiração; retirada conforme função intestinal.','Descomprime el estómago y protege contra distensión y aspiración; se retira según función intestinal.'],
-['Dreno','Drenaje','Dispositivo que evacua sangue, líquido ou pus; retirado quando o débito é baixo e de bom aspecto.','Dispositivo que evacúa sangre, líquido o pus; se retira cuando el débito es bajo y de buen aspecto.'],
-['Deiscência','Dehiscencia','Abertura parcial ou total de ferida operatória ou anastomose.','Apertura parcial o total de herida operatoria o anastomosis.'],
-['Evisceração','Evisceración','Exteriorização de vísceras pela ferida abdominal; emergência cirúrgica.','Exteriorización de vísceras por la herida abdominal; emergencia quirúrgica.'],
-['Mobilização precoce','Movilización precoz','Deambulação logo após a cirurgia; reduz TVP, atelectasia e íleo.','Deambulación temprana tras la cirugía; reduce TVP, atelectasia e íleo.'],
-['Analgesia preventiva','Analgesia preventiva','Analgesia iniciada antes/durante o ato para reduzir a dor pós-operatória e a resposta ao estresse.','Analgesia iniciada antes/durante el acto para reducir el dolor posoperatorio y la respuesta al estrés.'],
-['Delirium pós-operatório','Delirium posoperatorio','Confusão aguda e flutuante, comum em idosos; investigar dor, hipóxia, infecção e fármacos.','Confusión aguda y fluctuante, común en ancianos; investigar dolor, hipoxia, infección y fármacos.']];
-let lang='pt',bg='clara',cur=0,mapSel=0;
-try{lang=localStorage.getItem('pp-lang')||'pt';bg=localStorage.getItem('pp-bg')||'clara'}catch(e){}
-const BGS={clara:['#F2F6F8','light'],papel:['#F6EFE0','light'],oceano:['#9ED3E6','light'],noite:['#0C1B23','dark'],grafite:['#2A2E33','dark']};
-const t=k=>T[lang][k];
-const nav=document.getElementById('tabnav');
-TABS.forEach((x,i)=>{const b=document.createElement('button');b.dataset.target=x[0];b.onclick=()=>selectTab(x[0]);nav.appendChild(b);
-  const p=document.getElementById(x[0]);const pg=document.createElement('div');pg.className='pager';
-  pg.innerHTML=(i>0?'<button class="btn" data-go="'+(i-1)+'"></button>':'<span></span>')+(i<TABS.length-1?'<button class="btn primary" data-go="'+(i+1)+'"></button>':'');
-  pg.querySelectorAll('button').forEach(bt=>bt.onclick=()=>selectTab(TABS[+bt.dataset.go][0]));p.appendChild(pg);});
-function selectTab(id,noHash){
-  cur=TABS.findIndex(x=>x[0]===id);
-  document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.tabnav button').forEach(b=>{const on=b.dataset.target===id;b.classList.toggle('active',on);if(on)b.scrollIntoView({inline:'center',block:'nearest'})});
-  if(!noHash){try{history.replaceState(null,'','#'+id)}catch(e){}}
-  window.scrollTo({top:0,behavior:'instant'});
-}
-function applyBg(){const [,th]=BGS[bg];const r=document.documentElement;r.dataset.bg=bg;r.dataset.theme=th;
-  document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('active',s.dataset.b===bg));try{localStorage.setItem('pp-bg',bg)}catch(e){}}
-function applyLang(){
-  document.documentElement.lang=lang==='pt'?'pt-BR':'es';
-  document.querySelectorAll('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));
-  document.title=t('title');
-  document.querySelectorAll('.tabnav button').forEach((b,i)=>b.textContent=TABS[i][lang==='pt'?1:2]);
-  document.querySelectorAll('.pager').forEach((pg,i)=>pg.querySelectorAll('button').forEach(b=>b.textContent=(+b.dataset.go<i)?t('prev'):t('next')));
-  document.querySelectorAll('#langseg button').forEach(b=>b.classList.toggle('active',b.dataset.l===lang));
-  document.getElementById('gl-q').placeholder=t('glS');
-  renderMap();renderGloss();try{localStorage.setItem('pp-lang',lang)}catch(e){}
-}
-['pt','es'].forEach(l=>{const b=document.createElement('button');b.textContent=l.toUpperCase();b.dataset.l=l;b.onclick=()=>{lang=l;applyLang()};document.getElementById('langseg').appendChild(b)});
-Object.keys(BGS).forEach(k=>{const s=document.createElement('button');s.className='sw';s.dataset.b=k;s.title=k;s.setAttribute('aria-label',k);s.style.background=BGS[k][0];s.onclick=()=>{bg=k;applyBg()};document.getElementById('swatches').appendChild(s)});
-
-function renderMap(){
-  const cx=350,cy=320,R=235,L=lang==='pt'?0:1;let s='<svg viewBox="0 0 700 640" role="img">';
-  BR.forEach((b,i)=>{const a=(-90+60*i)*Math.PI/180,x=cx+R*Math.cos(a),y=cy+R*Math.sin(a);
-    s+='<g class="mb b-'+b[0]+(i===mapSel?' on':'')+'" data-i="'+i+'" tabindex="0" role="button"><path class="ln" d="M'+cx+','+cy+' Q'+((cx+x)/2+(y-cy)*.12)+','+((cy+y)/2-(x-cx)*.12)+' '+x+','+y+'"/>';
-    b[3].forEach((_,k)=>{const aa=a+(k-1)*.5;s+='<circle class="dt" r="7" cx="'+(x+120*Math.cos(aa))+'" cy="'+(y+46*Math.sin(aa)+(Math.sin(aa)>0?14:-14))+'"/>'});
-    s+='<ellipse class="nd" cx="'+x+'" cy="'+y+'" rx="104" ry="30"/><text class="tx" x="'+x+'" y="'+y+'">'+b[1+L]+'</text></g>'});
-  s+='<circle class="mm-root" cx="'+cx+'" cy="'+cy+'" r="68"/><text class="mm-rt" x="'+cx+'" y="'+cy+'">'+(L?'Perioperatorio':'Perioperatório')+'</text></svg>';
-  document.getElementById('mm').innerHTML=s;
-  const b=BR[mapSel],d=document.getElementById('mm-detail');d.className='mm-detail b-'+b[0];
-  d.innerHTML='<h4>'+b[1+L]+'</h4><ul class="plain">'+b[3+L].map(x=>'<li>'+x+'</li>').join('')+'</ul>';
-}
-document.getElementById('mm').addEventListener('click',e=>{const g=e.target.closest('.mb');if(g){mapSel=+g.dataset.i;renderMap()}});
-document.getElementById('mm').addEventListener('keydown',e=>{const g=e.target.closest&&e.target.closest('.mb');if(g&&(e.key==='Enter'||e.key===' ')){e.preventDefault();mapSel=+g.dataset.i;renderMap();document.querySelector('.mb.on').focus()}});
-function renderGloss(){
-  const L=lang==='pt'?0:1,q=document.getElementById('gl-q').value.trim().toLowerCase();
-  const items=GL.map(g=>({n:g[L],d:g[2+L]})).filter(g=>!q||(g.n+' '+g.d).toLowerCase().includes(q)).sort((a,b)=>a.n.localeCompare(b.n,lang==='pt'?'pt':'es'));
-  let h='',last='';items.forEach(g=>{const l=g.n[0].toUpperCase();if(l!==last){h+='<div class="gl-letter">'+l+'</div>';last=l}h+='<div class="gl-item"><b>'+g.n+'</b><p>'+g.d+'</p></div>'});
-  document.getElementById('gl-list').innerHTML=h;document.getElementById('gl-count').textContent=items.length+' '+t('glN');
-}
-document.getElementById('gl-q').addEventListener('input',renderGloss);
-window.addEventListener('scroll',()=>{const h=document.documentElement;document.getElementById('progress').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight||1)*100)+'%';document.getElementById('totop').style.display=h.scrollTop>500?'block':'none'},{passive:true});
-document.getElementById('totop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
-document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;if(e.key==='ArrowRight'&&cur<TABS.length-1)selectTab(TABS[cur+1][0]);if(e.key==='ArrowLeft'&&cur>0)selectTab(TABS[cur-1][0])});
-applyBg();applyLang();
-selectTab((TABS.find(x=>'#'+x[0]===location.hash)||TABS[0])[0],true);
-</script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/matches.js"></script>
+  <script src="js/leagues.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
