@@ -19922,12 +19922,17 @@ let currentCalcCategory = null;
 function toggleCalcCategory(cat) {
   currentCalcCategory = cat;
   renderCalcList();
+  // Regista a entrada na categoria para que o botão físico do Android
+  // também consiga regressar exactamente ao nível anterior.
+  history.pushState({ calcList: true, calcCategory: cat }, '', '');
   document.getElementById('calc-list').scrollIntoView({ block: 'start' });
 }
 
-function backToCalcCategories() {
+function backToCalcCategories(fromHistory = false) {
   currentCalcCategory = null;
   renderCalcList();
+  // Ao tocar na seta da própria página, sincroniza também o histórico.
+  if (!fromHistory) history.replaceState({ calcList: true }, '', '');
 }
 
 function renderCalcList() {
@@ -20045,18 +20050,32 @@ function filterCalcList() {
 }
 
 function showCalcList() {
+  const previousScreen = currentScreen;
   savedScrollY = window.scrollY;
   document.getElementById('list-view').style.display = 'none';
   document.getElementById('detail-view').style.display = 'none';
   document.getElementById('calc-detail-view').style.display = 'none';
   document.getElementById('calc-list-view').style.display = 'block';
   document.getElementById('info-page-view').style.display = 'none';
+  document.getElementById('siglas-view').style.display = 'none';
   document.getElementById('searchBox').style.display = 'none';
   document.getElementById('calcEntryRow').style.display = 'none';
-  currentCalcCategory = null;
+
+  // Ao sair de um cálculo, mantém a categoria e a pesquisa de onde ele foi aberto.
+  // Ao entrar nas ferramentas a partir do início, começa na lista de categorias.
+  if (previousScreen !== 'calcDetail' && previousScreen !== 'siglasList') {
+    currentCalcCategory = null;
+  }
   currentScreen = 'calcList';
   renderCalcList();
-  history.pushState({ calcList: true }, '', '');
+
+  // Se estamos a regressar, substitui o estado actual em vez de criar
+  // uma nova etapa e provocar ciclos na navegação do botão Voltar.
+  if (previousScreen === 'calcDetail' || previousScreen === 'siglasList') {
+    history.replaceState({ calcList: true, calcCategory: currentCalcCategory }, '', '');
+  } else {
+    history.pushState({ calcList: true }, '', '');
+  }
   window.scrollTo(0, 0);
 }
 
@@ -20467,32 +20486,42 @@ function handleBackNavigation() {
   // Always go back exactly ONE step to the previous screen — never jump
   // straight to the home screen from a deeper level.
   if (currentScreen === 'calcDetail') {
-    // Calculator detail → back to calculator list
+    // Cálculo → categoria/lista exacta de onde o cálculo foi aberto.
     showCalcList();
     return;
   }
 
   if (currentScreen === 'siglasList') {
-    // Siglas glossary → back to calculator list
     closeSiglasList();
     return;
   }
 
+  if (currentScreen === 'calcList' && currentCalcCategory) {
+    // Dentro de uma categoria: regressa primeiro às categorias principais.
+    backToCalcCategories(true);
+    return;
+  }
+
   if (currentScreen === 'calcList') {
-    // Calculator list → back to home (its immediate previous screen)
+    // Lista principal das ferramentas → página inicial.
     showList();
     history.pushState(null, '', '');
     return;
   }
 
   if (currentScreen === 'detail') {
-    // Disease detail → back to home (its immediate previous screen)
     showList();
     history.pushState(null, '', '');
     return;
   }
 
-  // We are on the home/main screen — let AppMint's native exit button handle exit.
+  if (currentScreen === 'info') {
+    closeInfoPage();
+    history.pushState(null, '', '');
+    return;
+  }
+
+  // No ecrã inicial, deixa o invólucro Android tratar da saída.
   history.pushState(null, '', '');
 }
 
