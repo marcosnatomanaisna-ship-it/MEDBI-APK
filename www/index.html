@@ -9855,15 +9855,33 @@ function examIsAnswered(q, ans){
   return true;
 }
 
+function normalizeExamAnswer(value){
+  return String(value ?? '')
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\u2060\uFEFF\u00AD]/g, '')
+    .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('pt')
+    .replace(/[‐‑‒–—―]/g, '-')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
 function examIsCorrect(q, ans){
   if(!examIsAnswered(q, ans)) return false;
   if(q.kind === 'mc') return ans === q.correct;
   if(q.kind === 'vf') return ans === q.isTrue;
   if(q.kind === 'comp'){
-    const given = normalizeSearch(ans);
-    const full = normalizeSearch(q.answer);
-    const primary = normalizeSearch(q.answer.replace(/\s*\(.*?\)\s*/g, ' ').trim());
-    return given === full || given === primary;
+    const given = normalizeExamAnswer(ans);
+    const rawAnswer = String(q.answer ?? '').trim();
+    const accepted = new Set([
+      normalizeExamAnswer(rawAnswer),
+      normalizeExamAnswer(rawAnswer.replace(/\s*\([^)]*\)\s*/g, ' ')),
+      ...rawAnswer.split(/\s*(?:\/|;|\|)\s*/).map(normalizeExamAnswer)
+    ].filter(Boolean));
+    return accepted.has(given);
   }
   if(q.kind === 'rel') return ans.every((v,i) => v === q.correctOrder[i]);
   if(q.kind === 'dev') return ans.mark === true;
@@ -10188,7 +10206,7 @@ function renderExamResult(){
     } else if(q.kind === 'comp'){
       bodyHtml += '<div class="sri-q">'+ badge +'<span>'+ (qi+1) +'. Complete: ________ — '+ q.prompt +'</span></div>';
       bodyHtml += '<div class="sri-opt is-correct">Resposta correta: '+ q.answer +'</div>';
-      if(userAns) bodyHtml += '<div class="sri-opt '+ (isCorrect?'':'is-wrong') +'">Você escreveu: '+ userAns +'</div>';
+      if(userAns) bodyHtml += '<div class="sri-opt '+ (isCorrect?'':'is-wrong') +'">Você escreveu: '+ String(userAns).trim() +'</div>';
     } else if(q.kind === 'rel'){
       bodyHtml += '<div class="sri-q">'+ badge +'<span>'+ (qi+1) +'. Relação de colunas — '+ q.moduleName +'</span></div>';
       q.terms.forEach((term, ti) => {
